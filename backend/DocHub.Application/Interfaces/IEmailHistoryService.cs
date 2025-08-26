@@ -5,11 +5,11 @@ namespace DocHub.Application.Interfaces;
 public interface IEmailHistoryService
 {
     Task<EmailHistoryDto> CreateEmailHistoryAsync(CreateEmailHistoryRequest request);
-    Task<EmailHistoryDto> GetEmailHistoryByIdAsync(string id);
+    Task<EmailHistoryDto?> GetEmailHistoryByIdAsync(string id);
     Task<IEnumerable<EmailHistoryDto>> GetEmailHistoryByEmployeeAsync(string employeeId);
     Task<IEnumerable<EmailHistoryDto>> GetEmailHistoryByStatusAsync(string status);
     Task<IEnumerable<EmailHistoryDto>> GetEmailHistoryByDateRangeAsync(DateTime startDate, DateTime endDate);
-    Task<EmailHistoryDto> UpdateEmailStatusAsync(string id, string status, string? errorMessage = null);
+    Task<EmailHistoryDto?> UpdateEmailStatusAsync(string id, string status, string? errorMessage = null);
     Task<bool> ResendEmailAsync(string emailHistoryId, ResendEmailRequest request);
     Task<IEnumerable<EmailHistoryDto>> GetFailedEmailsAsync();
     Task<bool> RetryFailedEmailAsync(string emailHistoryId);

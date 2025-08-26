@@ -25,18 +25,18 @@ public class EmployeeService : IEmployeeService
             .ToListAsync();
     }
 
-    public async Task<Employee> GetByIdAsync(string id)
+    public async Task<Employee?> GetByIdAsync(string id)
     {
         return await _context.Employees.FindAsync(id);
     }
 
-    public async Task<Employee> GetByEmployeeIdAsync(string employeeId)
+    public async Task<Employee?> GetByEmployeeIdAsync(string employeeId)
     {
         return await _context.Employees
             .FirstOrDefaultAsync(e => e.EmployeeId == employeeId);
     }
 
-    public async Task<Employee> GetByEmailAsync(string email)
+    public async Task<Employee?> GetByEmailAsync(string email)
     {
         return await _context.Employees
             .FirstOrDefaultAsync(e => e.Email == email);
@@ -163,8 +163,8 @@ public class EmployeeService : IEmployeeService
                 e.LastName.ToLower().Contains(term) ||
                 e.EmployeeId.ToLower().Contains(term) ||
                 e.Email.ToLower().Contains(term) ||
-                e.Department.ToLower().Contains(term) ||
-                e.Designation.ToLower().Contains(term)
+                (e.Department != null && e.Department.ToLower().Contains(term)) ||
+                (e.Designation != null && e.Designation.ToLower().Contains(term))
             ))
             .OrderBy(e => e.FirstName)
             .ThenBy(e => e.LastName)
@@ -184,6 +184,20 @@ public class EmployeeService : IEmployeeService
             .ThenBy(e => e.LastName)
             .Skip(skip)
             .Take(pageSize)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Employee>> GetEmployeesByIdsAsync(List<string> employeeIds)
+    {
+        if (employeeIds == null || !employeeIds.Any())
+        {
+            return Enumerable.Empty<Employee>();
+        }
+
+        return await _context.Employees
+            .Where(e => employeeIds.Contains(e.Id))
+            .OrderBy(e => e.FirstName)
+            .ThenBy(e => e.LastName)
             .ToListAsync();
     }
 }

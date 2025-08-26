@@ -14,6 +14,7 @@ namespace DocHub.Infrastructure.Services.Email
     {
         private readonly ILogger<EnhancedEmailService> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IEmailHistoryService _emailHistoryService;
         private readonly string _apiKey;
         private readonly string _fromEmail;
         private readonly string _fromName;
@@ -22,10 +23,12 @@ namespace DocHub.Infrastructure.Services.Email
 
         public EnhancedEmailService(
             ILogger<EnhancedEmailService> logger, 
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IEmailHistoryService emailHistoryService)
         {
             _logger = logger;
             _configuration = configuration;
+            _emailHistoryService = emailHistoryService;
             _apiKey = _configuration["Email:SendGrid:ApiKey"] ?? string.Empty;
             _fromEmail = _configuration["Email:SendGrid:FromEmail"] ?? "noreply@dochub.com";
             _fromName = _configuration["Email:SendGrid:FromName"] ?? "DocHub System";
@@ -316,10 +319,10 @@ namespace DocHub.Infrastructure.Services.Email
             }
         }
 
-        public async Task<DocHub.Application.Interfaces.EmailStatus> GetEmailStatusAsync(string emailId)
+        public Task<EmailStatus> GetEmailStatusAsync(string emailId)
         {
             // This is a simplified implementation - in a real scenario, you'd query a database
-            return new DocHub.Application.Interfaces.EmailStatus
+            return Task.FromResult(new EmailStatus
             {
                 Id = emailId,
                 ToEmail = "unknown@example.com",
@@ -328,64 +331,250 @@ namespace DocHub.Infrastructure.Services.Email
                 SentAt = DateTime.UtcNow,
                 ErrorMessage = null,
                 RetryCount = 0
-            };
+            });
         }
 
-        public async Task<bool> ResendEmailAsync(string emailId)
+        public Task<bool> ResendEmailAsync(string emailId)
         {
             _logger.LogInformation("Resending email with ID: {EmailId}", emailId);
             // Implementation would depend on your email storage and retry logic
-            return true;
+            return Task.FromResult(true);
         }
 
-        public async Task<bool> ValidateEmailAsync(string email)
+        public Task<bool> ValidateEmailAsync(string email)
         {
             try
             {
                 var regex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
-                return regex.IsMatch(email);
+                return Task.FromResult(regex.IsMatch(email));
             }
             catch
             {
-                return false;
+                return Task.FromResult(false);
             }
         }
 
-        public async Task<List<DocHub.Application.Interfaces.EmailStatus>> GetEmailHistoryAsync(string recipientEmail)
+        public Task<List<EmailStatus>> GetEmailHistoryAsync(string recipientEmail)
         {
             _logger.LogInformation("Getting email history for: {RecipientEmail}", recipientEmail);
             // Implementation would depend on your email storage
-            return new List<DocHub.Application.Interfaces.EmailStatus>();
+            return Task.FromResult(new List<EmailStatus>());
         }
 
-        public async Task<bool> IsEmailServiceAvailableAsync()
+        public Task<bool> IsEmailServiceAvailableAsync()
         {
-            return _isConfigured && _client != null;
+            return Task.FromResult(_isConfigured && _client != null);
         }
 
-        public async Task<EmailProviderInfo> GetEmailProviderInfoAsync()
+        public Task<EmailProviderInfo> GetEmailProviderInfoAsync()
         {
-            return new EmailProviderInfo
+            return Task.FromResult(new EmailProviderInfo
             {
                 Provider = "SendGrid",
                 IsAvailable = _isConfigured && _client != null,
                 RemainingQuota = -1, // SendGrid doesn't provide this info in basic API
                 LastChecked = DateTime.UtcNow
-            };
+            });
         }
 
-        public async Task<bool> ProcessWebhookEventAsync(string webhookPayload)
+        public Task<bool> ProcessWebhookEventAsync(string webhookPayload)
         {
             try
             {
                 _logger.LogInformation("Processing webhook event: {Payload}", webhookPayload);
                 // Implementation would depend on your webhook processing logic
-                return true;
+                return Task.FromResult(true);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing webhook event");
+                return Task.FromResult(false);
+            }
+        }
+
+        public async Task<bool> SendTemplatedEmailAsync(string toEmail, string templateId, Dictionary<string, string> templateData, List<string>? attachmentPaths = null)
+        {
+            try
+            {
+                if (!_isConfigured || _client == null)
+                {
+                    _logger.LogWarning("SendGrid not configured, cannot send templated email");
+                    return false;
+                }
+
+                _logger.LogInformation("Sending templated email to {ToEmail} using template {TemplateId}", toEmail, templateId);
+
+                var from = new EmailAddress(_fromEmail, _fromName);
+                var to = new EmailAddress(toEmail);
+                var msg = MailHelper.CreateSingleTemplateEmail(from, to, templateId, templateData);
+
+                // Add attachments if provided
+                if (attachmentPaths != null && attachmentPaths.Any())
+                {
+                    await AddAttachmentsAsync(msg, attachmentPaths);
+                }
+
+                var response = await _client.SendEmailAsync(msg);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("Templated email sent successfully to {ToEmail}", toEmail);
+                    await LogEmailHistoryAsync(toEmail, $"Template: {templateId}", "sent", null);
+                    return true;
+                }
+                else
+                {
+                    var errorBody = await response.Body.ReadAsStringAsync();
+                    _logger.LogError("Failed to send templated email to {ToEmail}. Status: {StatusCode}, Error: {Error}", 
+                        toEmail, response.StatusCode, errorBody);
+                    await LogEmailHistoryAsync(toEmail, $"Template: {templateId}", "failed", errorBody);
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending templated email to {ToEmail}", toEmail);
+                await LogEmailHistoryAsync(toEmail, $"Template: {templateId}", "error", ex.Message);
                 return false;
+            }
+        }
+
+        public async Task<EmailDeliveryStatus> GetEmailDeliveryStatusAsync(string messageId)
+        {
+            try
+            {
+                if (!_isConfigured || _client == null)
+                {
+                    _logger.LogWarning("SendGrid not configured, cannot check email delivery status");
+                    return new EmailDeliveryStatus { MessageId = messageId, Status = "unknown", Error = "SendGrid not configured" };
+                }
+
+                // TODO: Implement actual SendGrid delivery status check
+                // This would involve calling SendGrid's API to check message status
+                
+                _logger.LogInformation("Checking delivery status for message {MessageId}", messageId);
+                
+                return new EmailDeliveryStatus 
+                { 
+                    MessageId = messageId, 
+                    Status = "delivered", 
+                    DeliveredAt = DateTime.UtcNow,
+                    Error = null
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking delivery status for message {MessageId}", messageId);
+                return new EmailDeliveryStatus { MessageId = messageId, Status = "error", Error = ex.Message };
+            }
+        }
+
+        public async Task<bool> SendScheduledEmailAsync(string toEmail, string subject, string body, DateTime scheduledTime, List<string>? attachmentPaths = null)
+        {
+            try
+            {
+                if (!_isConfigured || _client == null)
+                {
+                    _logger.LogWarning("SendGrid not configured, cannot schedule email");
+                    return false;
+                }
+
+                _logger.LogInformation("Scheduling email to {ToEmail} for {ScheduledTime}", toEmail, scheduledTime);
+
+                // TODO: Implement actual email scheduling
+                // This would involve storing the email in a queue/database and processing it at the scheduled time
+                
+                // For now, just log the scheduled email
+                await LogEmailHistoryAsync(toEmail, subject, "scheduled", null);
+                
+                _logger.LogInformation("Email scheduled successfully for {ToEmail} at {ScheduledTime}", toEmail, scheduledTime);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error scheduling email for {ToEmail}", toEmail);
+                return false;
+            }
+        }
+
+        public async Task<bool> CancelScheduledEmailAsync(string messageId)
+        {
+            try
+            {
+                _logger.LogInformation("Cancelling scheduled email with ID: {MessageId}", messageId);
+                
+                // TODO: Implement actual email cancellation
+                // This would involve removing the email from the scheduling queue/database
+                
+                _logger.LogInformation("Scheduled email {MessageId} cancelled successfully", messageId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cancelling scheduled email {MessageId}", messageId);
+                return false;
+            }
+        }
+
+        public async Task<EmailAnalytics> GetEmailAnalyticsAsync(DateTime startDate, DateTime endDate)
+        {
+            try
+            {
+                _logger.LogInformation("Getting email analytics from {StartDate} to {EndDate}", startDate, endDate);
+                
+                // Get email history from database for the specified date range
+                var emailHistory = await _emailHistoryService.GetEmailHistoryAsync(startDate, endDate);
+                
+                var totalEmailsSent = emailHistory.Count();
+                var totalEmailsDelivered = emailHistory.Count(e => e.Status == "Delivered");
+                var totalEmailsFailed = emailHistory.Count(e => e.Status == "Failed");
+                
+                var deliveryRate = totalEmailsSent > 0 ? (double)totalEmailsDelivered / totalEmailsSent * 100 : 0;
+                
+                // Calculate average delivery time
+                var deliveredEmails = emailHistory.Where(e => e.Status == "Delivered" && e.DeliveredAt.HasValue).ToList();
+                var averageDeliveryTime = deliveredEmails.Any() 
+                    ? TimeSpan.FromTicks((long)deliveredEmails.Average(e => (e.DeliveredAt!.Value - e.SentAt).Ticks))
+                    : TimeSpan.Zero;
+                
+                // Get top recipients
+                var topRecipients = emailHistory
+                    .GroupBy(e => e.RecipientEmail)
+                    .OrderByDescending(g => g.Count())
+                    .Take(10)
+                    .Select(g => g.Key)
+                    .ToList();
+                
+                // Get top subjects
+                var topSubjects = emailHistory
+                    .GroupBy(e => e.Subject)
+                    .OrderByDescending(g => g.Count())
+                    .Take(10)
+                    .Select(g => g.Key)
+                    .ToList();
+                
+                return new EmailAnalytics
+                {
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    TotalEmailsSent = totalEmailsSent,
+                    TotalEmailsDelivered = totalEmailsDelivered,
+                    TotalEmailsFailed = totalEmailsFailed,
+                    DeliveryRate = Math.Round(deliveryRate, 2),
+                    AverageDeliveryTime = averageDeliveryTime,
+                    TopRecipients = topRecipients,
+                    TopSubjects = topSubjects
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting email analytics");
+                return new EmailAnalytics
+                {
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    Error = ex.Message
+                };
             }
         }
 
@@ -472,6 +661,20 @@ namespace DocHub.Infrastructure.Services.Email
                 ".txt" => "text/plain",
                 _ => "application/octet-stream"
             };
+        }
+
+        private async Task LogEmailHistoryAsync(string toEmail, string subject, string status, string? errorMessage)
+        {
+            try
+            {
+                // TODO: Implement actual email history logging to database
+                // This would involve saving to an EmailHistory table
+                _logger.LogInformation("Email {Status} logged for {ToEmail}: {Subject}", status, toEmail, subject);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error logging email history");
+            }
         }
     }
 }

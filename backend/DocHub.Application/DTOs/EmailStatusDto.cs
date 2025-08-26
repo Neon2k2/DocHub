@@ -11,7 +11,7 @@ public class EmailStatusDto
     public DateTime? NextRetryTime { get; set; }
 }
 
-public enum EmailStatus
+public enum EmailStatusEnum
 {
     Pending,
     Sending,

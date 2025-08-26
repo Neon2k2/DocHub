@@ -80,8 +80,10 @@ public class LetterGenerationItemResult
     public string EmployeeName { get; set; } = string.Empty;
     public bool Success { get; set; }
     public string? LetterId { get; set; }
-    public string? ErrorMessage { get; set; }
     public string? PreviewId { get; set; }
+    public string? LetterNumber { get; set; }
+    public string? Status { get; set; }
+    public string? ErrorMessage { get; set; }
 }
 
 public class BulkPreviewGenerationResult

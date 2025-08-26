@@ -34,7 +34,7 @@ public class DigitalSignatureService : IDigitalSignatureService
             .ToListAsync();
     }
 
-    public async Task<DigitalSignature> GetByIdAsync(string id)
+    public async Task<DigitalSignature?> GetByIdAsync(string id)
     {
         return await _context.DigitalSignatures.FindAsync(id);
     }
@@ -62,7 +62,7 @@ public class DigitalSignatureService : IDigitalSignatureService
 
     public async Task<DigitalSignature> UpdateAsync(string id, DigitalSignature signature)
     {
-        var existingSignature = await GetByIdAsync(id);
+        DigitalSignature? existingSignature = await GetByIdAsync(id);
         if (existingSignature == null)
         {
             throw new InvalidOperationException($"Signature with id '{id}' not found.");
@@ -88,7 +88,7 @@ public class DigitalSignatureService : IDigitalSignatureService
 
     public async Task<bool> DeleteAsync(string id)
     {
-        var signature = await GetByIdAsync(id);
+        DigitalSignature? signature = await GetByIdAsync(id);
         if (signature == null)
         {
             return false;
@@ -116,7 +116,7 @@ public class DigitalSignatureService : IDigitalSignatureService
             .ToListAsync();
     }
 
-    public async Task<DigitalSignature> GetByAuthorityNameAsync(string authorityName)
+    public async Task<DigitalSignature?> GetByAuthorityNameAsync(string authorityName)
     {
         return await _context.DigitalSignatures
             .FirstOrDefaultAsync(s => s.AuthorityName == authorityName);
@@ -129,7 +129,7 @@ public class DigitalSignatureService : IDigitalSignatureService
 
     public async Task<bool> ToggleActiveAsync(string id)
     {
-        var signature = await GetByIdAsync(id);
+        DigitalSignature? signature = await GetByIdAsync(id);
         if (signature == null)
         {
             return false;
@@ -212,7 +212,7 @@ public class DigitalSignatureService : IDigitalSignatureService
 
     public async Task<byte[]> GetSignatureImageAsync(string id)
     {
-        var signature = await GetByIdAsync(id);
+        DigitalSignature? signature = await GetByIdAsync(id);
         if (signature == null)
         {
             throw new InvalidOperationException($"Signature with id '{id}' not found.");

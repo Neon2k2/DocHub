@@ -13,17 +13,117 @@ public class DigitalSignatureController : ControllerBase
 {
     private readonly IPROXKeyService _proxKeyService;
     private readonly ISignatureService _signatureService;
+    private readonly IDigitalSignatureService _digitalSignatureService;
     private readonly ILogger<DigitalSignatureController> _logger;
 
     public DigitalSignatureController(
         IPROXKeyService proxKeyService,
         ISignatureService signatureService,
+        IDigitalSignatureService digitalSignatureService,
         ILogger<DigitalSignatureController> logger)
     {
         _proxKeyService = proxKeyService;
         _signatureService = signatureService;
+        _digitalSignatureService = digitalSignatureService;
         _logger = logger;
     }
+
+    #region CRUD Operations
+
+    /// <summary>
+    /// Get all digital signatures with pagination
+    /// </summary>
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<DigitalSignature>>> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50)
+    {
+        try
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 50;
+
+            var signatures = await _digitalSignatureService.GetPagedAsync(page, pageSize);
+            var totalCount = await _digitalSignatureService.GetTotalCountAsync();
+
+            Response.Headers.Add("X-Total-Count", totalCount.ToString());
+            Response.Headers.Add("X-Page", page.ToString());
+            Response.Headers.Add("X-PageSize", pageSize.ToString());
+
+            return Ok(signatures);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all digital signatures");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    /// <summary>
+    /// Get active digital signatures
+    /// </summary>
+    [HttpGet("active")]
+    public async Task<ActionResult<IEnumerable<DigitalSignature>>> GetActive()
+    {
+        try
+        {
+            var signatures = await _digitalSignatureService.GetActiveSignaturesAsync();
+            return Ok(signatures);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting active signatures");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    /// <summary>
+    /// Get latest signature path
+    /// </summary>
+    [HttpGet("latest")]
+    public async Task<ActionResult<string>> GetLatestSignaturePath()
+    {
+        try
+        {
+            var signaturePath = await _digitalSignatureService.GetLatestSignaturePathAsync();
+            if (string.IsNullOrEmpty(signaturePath))
+            {
+                return NotFound("No active signatures found");
+            }
+            return Ok(new { signaturePath });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting latest signature path");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    /// <summary>
+    /// Get digital signature by ID
+    /// </summary>
+    [HttpGet("{id}")]
+    public async Task<ActionResult<DigitalSignature>> GetById(string id)
+    {
+        try
+        {
+            var signature = await _digitalSignatureService.GetByIdAsync(id);
+            if (signature == null)
+            {
+                return NotFound();
+            }
+            return Ok(signature);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting signature by id: {Id}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    #endregion
+
+    #region PROXKey Operations
 
     /// <summary>
     /// Get PROXKey device information
@@ -154,6 +254,10 @@ public class DigitalSignatureController : ControllerBase
         }
     }
 
+    #endregion
+
+    #region Update Operations
+
     /// <summary>
     /// Update digital signature
     /// </summary>
@@ -202,13 +306,14 @@ public class DigitalSignatureController : ControllerBase
             }
             else
             {
-                return NotFound(ApiResponse<bool>.ErrorResult("Signature not found", new List<string> { "Signature ID not found" }));
+                _logger.LogWarning("Failed to update digital signature: {SignatureId}", signatureId);
+                return BadRequest(ApiResponse<bool>.ErrorResult("Failed to update digital signature", new List<string> { "Update operation failed" }));
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating digital signature {SignatureId}", signatureId);
-            return StatusCode(500, ApiResponse<bool>.ErrorResult("Error updating signature", new List<string> { ex.Message }));
+            return StatusCode(500, ApiResponse<bool>.ErrorResult("Error updating digital signature", new List<string> { ex.Message }));
         }
     }
 
@@ -227,210 +332,141 @@ public class DigitalSignatureController : ControllerBase
 
             _logger.LogInformation("Deleting digital signature {SignatureId}", signatureId);
 
-            var success = await _proxKeyService.DeleteSignatureAsync(signatureId);
+            var isDeleted = await _digitalSignatureService.DeleteAsync(signatureId);
 
-            if (success)
+            if (isDeleted)
             {
                 _logger.LogInformation("Digital signature deleted successfully: {SignatureId}", signatureId);
                 return Ok(ApiResponse<bool>.SuccessResult(true, "Digital signature deleted successfully"));
             }
             else
             {
-                return NotFound(ApiResponse<bool>.ErrorResult("Signature not found", new List<string> { "Signature ID not found" }));
+                _logger.LogWarning("Failed to delete digital signature: {SignatureId}", signatureId);
+                return BadRequest(ApiResponse<bool>.ErrorResult("Failed to delete digital signature", new List<string> { "Delete operation failed" }));
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting digital signature {SignatureId}", signatureId);
-            return StatusCode(500, ApiResponse<bool>.ErrorResult("Error deleting signature", new List<string> { ex.Message }));
+            return StatusCode(500, ApiResponse<bool>.ErrorResult("Error deleting digital signature", new List<string> { ex.Message }));
         }
     }
 
+    #endregion
+
+    #region Bulk Operations
+
     /// <summary>
-    /// Get signatures by authority
+    /// Bulk update signature status
     /// </summary>
-    [HttpGet("by-authority/{authorityName}")]
-    public async Task<ActionResult<ApiResponse<IEnumerable<DigitalSignatureDto>>>> GetSignaturesByAuthority(string authorityName)
+    [HttpPut("bulk-status")]
+    public async Task<ActionResult<ApiResponse<BulkOperationResult>>> BulkUpdateStatus([FromBody] BulkSignatureStatusUpdateRequest request)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(authorityName))
+            if (request?.SignatureIds == null || !request.SignatureIds.Any())
             {
-                return BadRequest(ApiResponse<IEnumerable<DigitalSignatureDto>>.ValidationErrorResult("Authority name is required", new List<string> { "Authority name is required" }));
+                return BadRequest(ApiResponse<BulkOperationResult>.ValidationErrorResult("Signature IDs are required", new List<string> { "At least one signature ID is required" }));
             }
 
-            _logger.LogInformation("Retrieving signatures for authority: {AuthorityName}", authorityName);
+            _logger.LogInformation("Bulk updating status for {Count} signatures", request.SignatureIds.Count);
 
-            var signatures = await _proxKeyService.GetSignaturesByAuthorityAsync(authorityName);
+            var results = new List<SignatureUpdateResult>();
+            var successCount = 0;
+            var failureCount = 0;
 
-            _logger.LogInformation("Retrieved {Count} signatures for authority {AuthorityName}", signatures.Count(), authorityName);
-
-            // Convert entities to DTOs
-            var signatureDtos = signatures.Select(s => new DigitalSignatureDto
-            {
-                Id = s.Id,
-                SignatureName = s.SignatureName,
-                AuthorityName = s.AuthorityName,
-                AuthorityDesignation = s.AuthorityDesignation,
-                SignatureImagePath = s.SignatureImagePath,
-                SignatureData = s.SignatureData,
-                SignatureDate = s.SignatureDate,
-                IsActive = s.IsActive,
-                SortOrder = s.SortOrder,
-                CreatedAt = s.CreatedAt,
-                UpdatedAt = s.UpdatedAt,
-                CreatedBy = s.CreatedBy,
-                UpdatedBy = s.UpdatedBy
-            });
-
-            return Ok(ApiResponse<IEnumerable<DigitalSignatureDto>>.SuccessResult(signatureDtos, "Signatures retrieved successfully"));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving signatures for authority {AuthorityName}", authorityName);
-            return StatusCode(500, ApiResponse<IEnumerable<DigitalSignatureDto>>.ErrorResult("Error retrieving signatures", new List<string> { ex.Message }));
-        }
-    }
-
-    /// <summary>
-    /// Get latest signature
-    /// </summary>
-    [HttpGet("latest")]
-    public async Task<ActionResult<ApiResponse<DigitalSignatureDto>>> GetLatestSignature()
+            foreach (var signatureId in request.SignatureIds)
     {
         try
         {
-            _logger.LogInformation("Retrieving latest digital signature");
+                    var signature = await _digitalSignatureService.GetByIdAsync(signatureId);
+                    if (signature != null)
+                    {
+                        signature.IsActive = request.IsActive;
+                        signature.UpdatedAt = DateTime.UtcNow;
+                        signature.UpdatedBy = "System"; // TODO: Get from current user context
 
-            var signature = await _proxKeyService.GetLatestSignatureAsync();
+                        await _digitalSignatureService.UpdateAsync(signature);
+                        successCount++;
 
-            if (signature == null)
-            {
-                return NotFound(ApiResponse<DigitalSignatureDto>.ErrorResult("No signatures found", new List<string> { "No digital signatures exist" }));
+                        results.Add(new SignatureUpdateResult
+                        {
+                            SignatureId = signatureId,
+                            Success = true,
+                            Message = "Status updated successfully"
+                        });
+                    }
+                    else
+                    {
+                        failureCount++;
+                        results.Add(new SignatureUpdateResult
+                        {
+                            SignatureId = signatureId,
+                            Success = false,
+                            Message = "Signature not found"
+                        });
+                    }
+        }
+        catch (Exception ex)
+        {
+                    failureCount++;
+                    results.Add(new SignatureUpdateResult
+                    {
+                        SignatureId = signatureId,
+                        Success = false,
+                        Message = $"Error: {ex.Message}"
+                    });
+                }
             }
 
-            _logger.LogInformation("Latest signature retrieved successfully. Signature ID: {SignatureId}", signature.Id);
-
-            // Convert entity to DTO
-            var signatureDto = new DigitalSignatureDto
+            var bulkResult = new BulkOperationResult
             {
-                Id = signature.Id,
-                SignatureName = signature.SignatureName,
-                AuthorityName = signature.AuthorityName,
-                AuthorityDesignation = signature.AuthorityDesignation,
-                SignatureImagePath = signature.SignatureImagePath,
-                SignatureData = signature.SignatureData,
-                SignatureDate = signature.SignatureDate,
-                IsActive = signature.IsActive,
-                SortOrder = signature.SortOrder,
-                CreatedAt = signature.CreatedAt,
-                UpdatedAt = signature.UpdatedAt,
-                CreatedBy = signature.CreatedBy,
-                UpdatedBy = signature.UpdatedBy
+                TotalRequested = request.SignatureIds.Count,
+                SuccessfulCount = successCount,
+                FailedCount = failureCount,
+                Results = results
             };
 
-            return Ok(ApiResponse<DigitalSignatureDto>.SuccessResult(signatureDto, "Latest signature retrieved successfully"));
+            _logger.LogInformation("Bulk status update completed: {SuccessCount}/{TotalCount} successful", successCount, request.SignatureIds.Count);
+
+            return Ok(ApiResponse<BulkOperationResult>.SuccessResult(bulkResult, $"Bulk status update completed: {successCount}/{request.SignatureIds.Count} successful"));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving latest signature");
-            return StatusCode(500, ApiResponse<DigitalSignatureDto>.ErrorResult("Error retrieving latest signature", new List<string> { ex.Message }));
+            _logger.LogError(ex, "Error during bulk status update");
+            return StatusCode(500, ApiResponse<BulkOperationResult>.ErrorResult("Error during bulk status update", new List<string> { ex.Message }));
         }
     }
 
-    /// <summary>
-    /// Test PROXKey device connection
-    /// </summary>
-    [HttpPost("test-connection")]
-    public async Task<ActionResult<ApiResponse<DeviceConnectionTestResult>>> TestDeviceConnection()
-    {
-        try
-        {
-            _logger.LogInformation("Testing PROXKey device connection");
-
-            var deviceInfo = await _proxKeyService.GetDeviceInfoAsync();
-            var isConnected = deviceInfo.IsConnected;
-
-            var result = new DeviceConnectionTestResult
-            {
-                IsConnected = isConnected,
-                DeviceName = deviceInfo.DeviceName,
-                SerialNumber = deviceInfo.SerialNumber,
-                FirmwareVersion = deviceInfo.FirmwareVersion,
-                TestTimestamp = DateTime.UtcNow,
-                Status = isConnected ? "Connected" : "Disconnected"
-            };
-
-            _logger.LogInformation("PROXKey device connection test completed. Status: {Status}", result.Status);
-
-            return Ok(ApiResponse<DeviceConnectionTestResult>.SuccessResult(result, "Device connection test completed"));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error testing PROXKey device connection");
-            return StatusCode(500, ApiResponse<DeviceConnectionTestResult>.ErrorResult("Error testing device connection", new List<string> { ex.Message }));
-        }
-    }
-
-    /// <summary>
-    /// Get signature statistics
-    /// </summary>
-    [HttpGet("stats")]
-    public async Task<ActionResult<ApiResponse<SignatureStats>>> GetSignatureStats()
-    {
-        try
-        {
-            _logger.LogInformation("Retrieving digital signature statistics");
-
-            var latestSignature = await _proxKeyService.GetLatestSignatureAsync();
-            var deviceInfo = await _proxKeyService.GetDeviceInfoAsync();
-
-            var stats = new SignatureStats
-            {
-                TotalSignatures = 0, // This would need to be implemented in the service
-                ActiveSignatures = 0, // This would need to be implemented in the service
-                DeviceConnected = deviceInfo.IsConnected,
-                DeviceName = deviceInfo.DeviceName,
-                AvailableSignatures = deviceInfo.AvailableSignatures?.Count ?? 0,
-                LastSignatureDate = latestSignature?.CreatedAt,
-                LastSignatureAuthority = latestSignature?.AuthorityName
-            };
-
-            _logger.LogInformation("Digital signature statistics retrieved successfully");
-
-            return Ok(ApiResponse<SignatureStats>.SuccessResult(stats, "Signature statistics retrieved successfully"));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving signature statistics");
-            return StatusCode(500, ApiResponse<SignatureStats>.ErrorResult("Error retrieving statistics", new List<string> { ex.Message }));
-        }
-    }
+    #endregion
 }
 
-// Request and response models
+#region DTOs
+
 public class ValidateSignatureRequest
 {
     public string SignatureData { get; set; } = string.Empty;
 }
 
-public class DeviceConnectionTestResult
+public class BulkSignatureStatusUpdateRequest
 {
-    public bool IsConnected { get; set; }
-    public string DeviceName { get; set; } = string.Empty;
-    public string SerialNumber { get; set; } = string.Empty;
-    public string FirmwareVersion { get; set; } = string.Empty;
-    public DateTime TestTimestamp { get; set; }
-    public string Status { get; set; } = string.Empty;
+    public List<string> SignatureIds { get; set; } = new List<string>();
+    public bool IsActive { get; set; }
 }
 
-public class SignatureStats
+public class SignatureUpdateResult
 {
-    public int TotalSignatures { get; set; }
-    public int ActiveSignatures { get; set; }
-    public bool DeviceConnected { get; set; }
-    public string DeviceName { get; set; } = string.Empty;
-    public int AvailableSignatures { get; set; }
-    public DateTime? LastSignatureDate { get; set; }
-    public string? LastSignatureAuthority { get; set; }
+    public string SignatureId { get; set; } = string.Empty;
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
 }
+
+public class BulkOperationResult
+{
+    public int TotalRequested { get; set; }
+    public int SuccessfulCount { get; set; }
+    public int FailedCount { get; set; }
+    public List<SignatureUpdateResult> Results { get; set; } = new List<SignatureUpdateResult>();
+}
+
+#endregion

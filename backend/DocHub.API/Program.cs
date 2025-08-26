@@ -104,6 +104,16 @@ builder.Services.AddScoped<IEmailHistoryService, EmailHistoryService>();
 builder.Services.AddScoped<IPROXKeyService, DocHub.Infrastructure.Services.PROXKey.PROXKeyService>();
 builder.Services.AddScoped<ISignatureService, DocHub.Infrastructure.Services.Signature.SignatureService>();
 
+// Register new services for backend completion
+builder.Services.AddScoped<IFileValidationService, FileValidationService>();
+builder.Services.AddScoped<IFileCompressionService, FileCompressionService>();
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
+builder.Services.AddScoped<IRealTimeNotificationService, RealTimeNotificationService>();
+
+// Register Memory Cache for rate limiting
+builder.Services.AddMemoryCache();
+
 // Register generic repository for each entity type
 builder.Services.AddScoped(typeof(DocHub.Application.Interfaces.IGenericRepository<>), typeof(GenericRepository<>));
 
@@ -155,6 +165,9 @@ app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 
 // Add custom middleware
+app.UseRequestValidation();
+app.UseRateLimiting(new RateLimitOptions { MaxRequestsPerWindow = 100, WindowMinutes = 1 });
+app.UseGlobalExceptionHandler();
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
 app.UseAuthentication();

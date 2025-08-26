@@ -33,9 +33,7 @@ public class AppConfiguration
             var configValue = _configuration.GetValue<bool?>("UseSqlServer");
             var envValue = Environment.GetEnvironmentVariable("USE_SQL_SERVER")?.ToLower() == "true";
             
-            // Debug logging
-            System.Diagnostics.Debug.WriteLine($"UseSqlServer config value: {configValue}");
-            System.Diagnostics.Debug.WriteLine($"UseSqlServer env value: {envValue}");
+            
             
             // Explicitly check for false first, then fall back to environment variable
             if (configValue.HasValue)

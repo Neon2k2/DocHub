@@ -51,7 +51,7 @@ public class GeneratedLetterService : IGeneratedLetterService
             .ToListAsync();
     }
 
-    public async Task<GeneratedLetter> GetByIdAsync(string id)
+    public async Task<GeneratedLetter?> GetByIdAsync(string id)
     {
         return await _context.GeneratedLetters
             .Include(gl => gl.LetterTemplate)
@@ -61,7 +61,7 @@ public class GeneratedLetterService : IGeneratedLetterService
             .FirstOrDefaultAsync(gl => gl.Id == id);
     }
 
-    public async Task<GeneratedLetter> GetByLetterNumberAsync(string letterNumber)
+    public async Task<GeneratedLetter?> GetByLetterNumberAsync(string letterNumber)
     {
         return await _context.GeneratedLetters
             .Include(gl => gl.LetterTemplate)
@@ -190,7 +190,7 @@ public class GeneratedLetterService : IGeneratedLetterService
                 throw new ArgumentException($"Employee with ID {request.EmployeeId} not found");
 
             // Get signature if provided
-            DigitalSignature signature = null;
+            DigitalSignature? signature = null;
             if (!string.IsNullOrEmpty(request.DigitalSignatureId))
             {
                 signature = await _context.DigitalSignatures.FindAsync(request.DigitalSignatureId);
@@ -240,7 +240,7 @@ public class GeneratedLetterService : IGeneratedLetterService
     }
 
     // Keep the other method for backward compatibility
-    public async Task<GeneratedLetter> GenerateLetterAsync(string templateId, string employeeId, Dictionary<string, object> data, string signatureId = null)
+    public async Task<GeneratedLetter> GenerateLetterAsync(string templateId, string employeeId, Dictionary<string, object> data, string? signatureId = null)
     {
         var request = new GenerateLetterRequest
         {
@@ -252,7 +252,7 @@ public class GeneratedLetterService : IGeneratedLetterService
         return await GenerateLetterAsync(request);
     }
 
-    public async Task<bool> SendEmailAsync(string letterId, string emailId, List<string> attachmentPaths = null)
+    public async Task<bool> SendEmailAsync(string letterId, string emailId, List<string>? attachmentPaths = null)
     {
         try
         {
@@ -439,8 +439,90 @@ public class GeneratedLetterService : IGeneratedLetterService
     {
         try
         {
-            // Mock implementation - return a message ID
-            return $"BULK_{DateTime.UtcNow:yyyyMMddHHmmss}";
+            var operationId = Guid.NewGuid().ToString();
+            var results = new List<EmailSendingItemResult>();
+            var successfullySent = 0;
+            var failed = 0;
+
+            foreach (var letterId in request.LetterIds)
+            {
+                try
+                {
+                    // Get the letter with employee information
+                    var letter = await GetByIdAsync(letterId);
+                    if (letter == null)
+                    {
+                        throw new InvalidOperationException($"Letter with ID {letterId} not found");
+                    }
+
+                    if (letter.Employee == null)
+                    {
+                        throw new InvalidOperationException($"Employee information not found for letter {letterId}");
+                    }
+
+                    var employeeEmail = letter.Employee.Email;
+                    if (string.IsNullOrEmpty(employeeEmail))
+                    {
+                        throw new InvalidOperationException($"Employee email not found for letter {letterId}");
+                    }
+
+                    // Generate email subject and body
+                    var subject = $"Your {letter.LetterType} - {letter.LetterNumber}";
+                    var body = await GenerateEmailBodyAsync(letter);
+
+                    // Send the email
+                    var emailSent = await _emailService.SendEmailAsync(
+                        employeeEmail, 
+                        subject, 
+                        body, 
+                        request.AttachmentPaths
+                    );
+
+                    if (emailSent)
+                    {
+                        // Update letter status
+                        letter.Status = "Sent";
+                        letter.EmailId = Guid.NewGuid().ToString();
+                        letter.SentAt = DateTime.UtcNow;
+                        await UpdateAsync(letterId, letter);
+
+                        var result = new EmailSendingItemResult
+                        {
+                            LetterId = letterId,
+                            EmployeeEmail = employeeEmail,
+                            Success = true,
+                            EmailId = letter.EmailId
+                        };
+                        
+                        results.Add(result);
+                        successfullySent++;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Failed to send email");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error sending email for letter {LetterId}", letterId);
+                    
+                    var result = new EmailSendingItemResult
+                    {
+                        LetterId = letterId,
+                        EmployeeEmail = "unknown@company.com",
+                        Success = false,
+                        ErrorMessage = ex.Message
+                    };
+                    
+                    results.Add(result);
+                    failed++;
+                }
+            }
+
+            _logger.LogInformation("Bulk email operation {OperationId} completed. Success: {Success}, Failed: {Failed}", 
+                operationId, successfullySent, failed);
+
+            return operationId;
         }
         catch (Exception ex)
         {
@@ -586,6 +668,22 @@ public class GeneratedLetterService : IGeneratedLetterService
         return body.ToString();
     }
 
+    private async Task<string> GenerateEmailBodyAsync(GeneratedLetter letter)
+    {
+        var body = new StringBuilder();
+        body.AppendLine($"Dear {letter.Employee.FirstName} {letter.Employee.LastName},");
+        body.AppendLine();
+        body.AppendLine($"Please find attached your {letter.LetterType}.");
+        body.AppendLine();
+        body.AppendLine("Best regards,");
+        body.AppendLine("HR Department");
+        body.AppendLine();
+        body.AppendLine($"Reference: {letter.LetterNumber}");
+        body.AppendLine($"Generated: {letter.CreatedAt:dd/MM/yyyy HH:mm}");
+        
+        return body.ToString();
+    }
+
     // Bulk operations methods
     public async Task<BulkLetterGenerationResult> GenerateBulkLettersAsync(BulkLetterGenerationRequestDto request)
     {
@@ -600,20 +698,65 @@ public class GeneratedLetterService : IGeneratedLetterService
             {
                 try
                 {
-                    // TODO: Implement actual letter generation logic
-                    // This would involve calling the existing GenerateLetterAsync method
-                    
-                    var result = new LetterGenerationItemResult
+                    // Get employee information
+                    var employee = await _employeeService.GetByIdAsync(employeeId);
+                    if (employee == null)
                     {
+                        var result = new LetterGenerationItemResult
+                        {
+                            EmployeeId = employeeId,
+                            EmployeeName = "Unknown",
+                            Success = false,
+                            ErrorMessage = "Employee not found"
+                        };
+                        results.Add(result);
+                        failed++;
+                        continue;
+                    }
+
+                    // Create letter generation request
+                    var letterRequest = new GenerateLetterRequest
+                    {
+                        LetterTemplateId = request.LetterTemplateId,
                         EmployeeId = employeeId,
-                        EmployeeName = "Employee Name", // TODO: Get from employee service
-                        Success = true,
-                        LetterId = Guid.NewGuid().ToString(),
-                        PreviewId = Guid.NewGuid().ToString()
+                        CustomFields = request.CustomFields,
+                        DigitalSignatureId = request.DigitalSignatureId,
+                        GeneratePreview = true,
+                        SendEmail = request.SendEmail
                     };
+
+                    // Generate the letter
+                    var generatedLetter = await GenerateLetterAsync(letterRequest);
                     
-                    results.Add(result);
-                    successfullyGenerated++;
+                    if (generatedLetter != null)
+                    {
+                        var result = new LetterGenerationItemResult
+                        {
+                            EmployeeId = employeeId,
+                            EmployeeName = $"{employee.FirstName} {employee.LastName}",
+                            Success = true,
+                            LetterId = generatedLetter.Id,
+                            PreviewId = generatedLetter.PreviewId,
+                            LetterNumber = generatedLetter.LetterNumber,
+                            Status = generatedLetter.Status
+                        };
+                        
+                        results.Add(result);
+                        successfullyGenerated++;
+                    }
+                    else
+                    {
+                        var result = new LetterGenerationItemResult
+                        {
+                            EmployeeId = employeeId,
+                            EmployeeName = $"{employee.FirstName} {employee.LastName}",
+                            Success = false,
+                            ErrorMessage = "Letter generation failed"
+                        };
+                        
+                        results.Add(result);
+                        failed++;
+                    }
                 }
                 catch (Exception ex)
                 {

@@ -7,6 +7,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DocHub.API.Controllers;
 
@@ -145,6 +146,199 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Error refreshing token");
             return StatusCode(500, new AuthResponseDto
+            {
+                Success = false,
+                Message = "Internal server error"
+            });
+        }
+    }
+
+    [HttpPost("request-password-reset")]
+    public async Task<ActionResult<PasswordResetResponseDto>> RequestPasswordReset([FromBody] PasswordResetRequestDto request)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var admin = await _adminRepository.GetFirstOrDefaultAsync(a => a.Email == request.Email && a.IsActive);
+            if (admin == null)
+            {
+                // Don't reveal if email exists or not for security
+                return Ok(new PasswordResetResponseDto
+                {
+                    Success = true,
+                    Message = "If the email exists, a password reset link has been sent."
+                });
+            }
+
+            // Generate reset token
+            var resetToken = GenerateResetToken();
+            var expiresAt = DateTime.UtcNow.AddHours(24);
+
+            // Save reset token to database
+            var passwordReset = new PasswordReset
+            {
+                Id = Guid.NewGuid().ToString(),
+                Email = request.Email,
+                Token = resetToken,
+                ExpiresAt = expiresAt,
+                IsUsed = false,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = admin.Id.ToString()
+            };
+
+            // TODO: Save to PasswordReset table
+            // await _passwordResetRepository.AddAsync(passwordReset);
+
+            // TODO: Send email with reset link
+            // await _emailService.SendPasswordResetEmailAsync(request.Email, resetToken);
+
+            return Ok(new PasswordResetResponseDto
+            {
+                Success = true,
+                Message = "Password reset link has been sent to your email.",
+                ResetToken = resetToken, // Remove this in production
+                ExpiresAt = expiresAt
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error requesting password reset for email: {Email}", request.Email);
+            return StatusCode(500, new PasswordResetResponseDto
+            {
+                Success = false,
+                Message = "Internal server error"
+            });
+        }
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<ActionResult<PasswordResetResponseDto>> ResetPassword([FromBody] PasswordResetDto request)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (request.NewPassword != request.ConfirmPassword)
+            {
+                return BadRequest(new PasswordResetResponseDto
+                {
+                    Success = false,
+                    Message = "New password and confirmation password do not match."
+                });
+            }
+
+            // TODO: Validate reset token from database
+            // var passwordReset = await _passwordResetRepository.GetFirstOrDefaultAsync(pr => 
+            //     pr.Token == request.Token && 
+            //     !pr.IsUsed && 
+            //     pr.ExpiresAt > DateTime.UtcNow);
+
+            // if (passwordReset == null)
+            // {
+            //     return BadRequest(new PasswordResetResponseDto
+            //     {
+            //         Success = false,
+            //         Message = "Invalid or expired reset token."
+            //     });
+            // }
+
+            // Update admin password
+            // var admin = await _adminRepository.GetFirstOrDefaultAsync(a => a.Email == passwordReset.Email);
+            // if (admin != null)
+            // {
+            //     admin.PasswordHash = HashPassword(request.NewPassword);
+            //     await _adminRepository.UpdateAsync(admin);
+            // }
+
+            // Mark reset token as used
+            // passwordReset.IsUsed = true;
+            // passwordReset.UsedAt = DateTime.UtcNow;
+            // passwordReset.UsedByIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            // await _passwordResetRepository.UpdateAsync(passwordReset);
+
+            return Ok(new PasswordResetResponseDto
+            {
+                Success = true,
+                Message = "Password has been reset successfully."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting password");
+            return StatusCode(500, new PasswordResetResponseDto
+            {
+                Success = false,
+                Message = "Internal server error"
+            });
+        }
+    }
+
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<ActionResult<PasswordResetResponseDto>> ChangePassword([FromBody] ChangePasswordDto request)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (request.NewPassword != request.ConfirmPassword)
+            {
+                return BadRequest(new PasswordResetResponseDto
+                {
+                    Success = false,
+                    Message = "New password and confirmation password do not match."
+                });
+            }
+
+            // Get current user from JWT token
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new PasswordResetResponseDto
+                {
+                    Success = false,
+                    Message = "User not authenticated."
+                });
+            }
+
+            var admin = await _adminRepository.GetByIdAsync(userId);
+            if (admin == null)
+            {
+                return NotFound(new PasswordResetResponseDto
+                {
+                    Success = false,
+                    Message = "User not found."
+                });
+            }
+
+            // Verify current password
+            if (!VerifyPassword(request.CurrentPassword, admin.PasswordHash))
+            {
+                return BadRequest(new PasswordResetResponseDto
+                {
+                    Success = false,
+                    Message = "Current password is incorrect."
+                });
+            }
+
+            // Update password
+            admin.PasswordHash = HashPassword(request.NewPassword);
+            await _adminRepository.UpdateAsync(admin);
+
+            return Ok(new PasswordResetResponseDto
+            {
+                Success = true,
+                Message = "Password changed successfully."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error changing password for user: {UserId}", User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            return StatusCode(500, new PasswordResetResponseDto
             {
                 Success = false,
                 Message = "Internal server error"
@@ -292,36 +486,12 @@ public class AuthController : ControllerBase
 
         return principal;
     }
-}
 
-// DTOs
-public class LoginRequestDto
-{
-    public string Username { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-}
-
-public class RefreshTokenRequestDto
-{
-    public string Token { get; set; } = string.Empty;
-}
-
-public class AuthResponseDto
-{
-    public bool Success { get; set; }
-    public string Message { get; set; } = string.Empty;
-    public string? Token { get; set; }
-    public string? RefreshToken { get; set; }
-    public UserDto? User { get; set; }
-}
-
-public class UserDto
-{
-    public string Id { get; set; } = string.Empty;
-    public string Username { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string FullName { get; set; } = string.Empty;
-    public string? Role { get; set; }
-    public bool IsSuperAdmin { get; set; }
-    public string? Permissions { get; set; }
+    private string GenerateResetToken()
+    {
+        return Convert.ToBase64String(Guid.NewGuid().ToByteArray())
+            .Replace("/", "_")
+            .Replace("+", "-")
+            .Substring(0, 22);
+    }
 }

@@ -13,12 +13,14 @@ public class LetterPreviewService : ILetterPreviewService
     private readonly DocHubDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<LetterPreviewService> _logger;
+    private readonly IEmployeeService _employeeService; // Added IEmployeeService
 
-    public LetterPreviewService(DocHubDbContext context, IMapper mapper, ILogger<LetterPreviewService> logger)
+    public LetterPreviewService(DocHubDbContext context, IMapper mapper, ILogger<LetterPreviewService> logger, IEmployeeService employeeService) // Modified constructor
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _employeeService = employeeService; // Initialize IEmployeeService
     }
 
     public async Task<LetterPreviewDto> GeneratePreviewAsync(string letterTemplateId, string employeeId, string? digitalSignatureId = null)
@@ -599,15 +601,29 @@ public class LetterPreviewService : ILetterPreviewService
             {
                 try
                 {
-                    // TODO: Implement actual preview generation logic
-                    // This would involve calling the existing GeneratePreviewAsync method
+                    // Get employee information
+                    var employee = await _employeeService.GetByIdAsync(employeeId);
+                    if (employee == null)
+                    {
+                        throw new InvalidOperationException($"Employee with ID {employeeId} not found");
+                    }
+
+                    // Generate preview for this employee
+                    var previewRequest = new GeneratePreviewRequest
+                    {
+                        LetterTemplateId = request.LetterTemplateId,
+                        EmployeeId = employeeId,
+                        FieldValues = request.FieldValues
+                    };
+                    
+                    var preview = await GeneratePreviewAsync(previewRequest);
                     
                     var result = new PreviewGenerationItemResult
                     {
                         EmployeeId = employeeId,
-                        EmployeeName = "Employee Name", // TODO: Get from employee service
+                        EmployeeName = employee.Name,
                         Success = true,
-                        PreviewId = Guid.NewGuid().ToString()
+                        PreviewId = preview.Id
                     };
                     
                     results.Add(result);
@@ -620,7 +636,7 @@ public class LetterPreviewService : ILetterPreviewService
                     var result = new PreviewGenerationItemResult
                     {
                         EmployeeId = employeeId,
-                        EmployeeName = "Unknown",
+                        EmployeeName = "Unknown Employee",
                         Success = false,
                         ErrorMessage = ex.Message
                     };
@@ -629,6 +645,9 @@ public class LetterPreviewService : ILetterPreviewService
                     failed++;
                 }
             }
+
+            _logger.LogInformation("Bulk preview generation completed. Success: {Success}, Failed: {Failed}", 
+                successfullyGenerated, failed);
 
             return new BulkPreviewGenerationResult
             {
@@ -642,7 +661,7 @@ public class LetterPreviewService : ILetterPreviewService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating bulk previews");
+            _logger.LogError(ex, "Error in bulk preview generation");
             throw;
         }
     }

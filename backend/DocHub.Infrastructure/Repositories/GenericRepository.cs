@@ -35,7 +35,7 @@ namespace DocHub.Infrastructure.Repositories
             }
         }
 
-        public async Task<T> GetByIdAsync(string id)
+        public async Task<T?> GetByIdAsync(string id)
         {
             try
             {
@@ -239,7 +239,7 @@ namespace DocHub.Infrastructure.Repositories
             }
         }
 
-        public async Task<T> FirstOrDefaultAsync(Func<T, bool> predicate)
+        public async Task<T?> FirstOrDefaultAsync(Func<T, bool> predicate)
         {
             try
             {
@@ -308,7 +308,13 @@ namespace DocHub.Infrastructure.Repositories
                     return false;
                 }
 
-                var currentStatus = (bool)isActiveProperty.GetValue(entity);
+                var currentValue = isActiveProperty.GetValue(entity);
+                if (currentValue == null)
+                {
+                    _logger.LogWarning("IsActive property is null for entity of type {EntityType} with ID {Id}", typeof(T).Name, id);
+                    return false;
+                }
+                var currentStatus = (bool)currentValue;
                 isActiveProperty.SetValue(entity, !currentStatus);
                 entity.UpdatedAt = DateTime.UtcNow;
 
@@ -369,7 +375,7 @@ namespace DocHub.Infrastructure.Repositories
             }
         }
 
-        public async Task<T> GetFirstOrDefaultAsync(Func<T, bool> predicate)
+        public async Task<T?> GetFirstOrDefaultAsync(Func<T, bool> predicate)
         {
             try
             {

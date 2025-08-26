@@ -72,7 +72,7 @@ public class EmailHistoryService : IEmailHistoryService
         }
     }
 
-    public async Task<EmailHistoryDto> GetEmailHistoryByIdAsync(string id)
+    public async Task<EmailHistoryDto?> GetEmailHistoryByIdAsync(string id)
     {
         try
         {
@@ -224,7 +224,7 @@ public class EmailHistoryService : IEmailHistoryService
         }
     }
 
-    public async Task<EmailHistoryDto> UpdateEmailStatusAsync(string id, string status, string? errorMessage = null)
+    public async Task<EmailHistoryDto?> UpdateEmailStatusAsync(string id, string status, string? errorMessage = null)
     {
         try
         {

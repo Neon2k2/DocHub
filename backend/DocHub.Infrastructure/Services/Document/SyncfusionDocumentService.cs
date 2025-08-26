@@ -123,23 +123,23 @@ namespace DocHub.Infrastructure.Services.Document
             }
         }
 
-        public async Task<bool> ValidateTemplateAsync(string templatePath)
+        public Task<bool> ValidateTemplateAsync(string templatePath)
         {
             try
             {
                 if (!File.Exists(templatePath))
                 {
-                    return false;
+                    return Task.FromResult(false);
                 }
 
                 // Simple validation - check if file exists and has content
-                var fileInfo = new FileInfo(templatePath);
-                return fileInfo.Length > 0;
+                var fileInfo = new System.IO.FileInfo(templatePath);
+                return Task.FromResult(fileInfo.Length > 0);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error validating template: {TemplatePath}", templatePath);
-                return false;
+                return Task.FromResult(false);
             }
         }
 
@@ -171,7 +171,7 @@ namespace DocHub.Infrastructure.Services.Document
             return result;
         }
 
-        public async Task<byte[]> ConvertToPdfAsync(byte[] documentContent, string sourceFormat)
+        public Task<byte[]> ConvertToPdfAsync(byte[] documentContent, string sourceFormat)
         {
             try
             {
@@ -179,13 +179,13 @@ namespace DocHub.Infrastructure.Services.Document
                 
                 if (sourceFormat.ToLower() == "pdf")
                 {
-                    return documentContent; // Already PDF
+                    return Task.FromResult(documentContent); // Already PDF
                 }
                 
                 // For now, return a simple PDF representation
                 // In production, you would use Syncfusion to convert various formats
                 var content = $"Converted from {sourceFormat} to PDF\n\nContent length: {documentContent.Length} bytes";
-                return System.Text.Encoding.UTF8.GetBytes(content);
+                return Task.FromResult(System.Text.Encoding.UTF8.GetBytes(content));
             }
             catch (Exception ex)
             {
@@ -293,14 +293,14 @@ namespace DocHub.Infrastructure.Services.Document
             }
         }
 
-        public async Task<byte[]> AddDigitalSignatureAsync(byte[] document, DigitalSignature signature, string position = "bottom-right")
+        public Task<byte[]> AddDigitalSignatureAsync(byte[] document, DigitalSignature signature, string position = "bottom-right")
         {
             try
             {
                 // For now, return the original document
                 // In production, you would use Syncfusion to add digital signatures
                 _logger.LogInformation("Digital signature would be added to document for authority: {AuthorityName}", signature.AuthorityName);
-                return document;
+                return Task.FromResult(document);
             }
             catch (Exception ex)
             {
@@ -309,7 +309,7 @@ namespace DocHub.Infrastructure.Services.Document
             }
         }
 
-        public async Task<string> GetDocumentInfoAsync(byte[] document)
+        public Task<string> GetDocumentInfoAsync(byte[] document)
         {
             try
             {
@@ -320,12 +320,12 @@ namespace DocHub.Infrastructure.Services.Document
                     Format = "Unknown"
                 };
                 
-                return System.Text.Json.JsonSerializer.Serialize(info);
+                return Task.FromResult(System.Text.Json.JsonSerializer.Serialize(info));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting document info");
-                return "{}";
+                return Task.FromResult("{}");
             }
         }
 
@@ -334,18 +334,18 @@ namespace DocHub.Infrastructure.Services.Document
             return await ValidateTemplateAsync(templatePath);
         }
 
-        public async Task<List<string>> GetSupportedFormatsAsync()
+        public Task<List<string>> GetSupportedFormatsAsync()
         {
-            return await Task.FromResult(new List<string> { "PDF", "DOCX", "DOC", "TXT" });
+            return Task.FromResult(new List<string> { "PDF", "DOCX", "DOC", "TXT" });
         }
 
-        public async Task<byte[]> CompressDocumentAsync(byte[] document, int quality = 80)
+        public Task<byte[]> CompressDocumentAsync(byte[] document, int quality = 80)
         {
             // Mock implementation - return original document
-            return document;
+            return Task.FromResult(document);
         }
 
-        public async Task<byte[]> GenerateLetterPreviewAsync(LetterTemplate template, Employee employee, Dictionary<string, object> data, DigitalSignature signature)
+        public Task<byte[]> GenerateLetterPreviewAsync(LetterTemplate template, Employee employee, Dictionary<string, object> data, DigitalSignature signature)
         {
             try
             {
@@ -372,7 +372,7 @@ namespace DocHub.Infrastructure.Services.Document
                     content.AppendLine($"Date: {signature.SignatureDate:dd/MM/yyyy}");
                 }
                 
-                return System.Text.Encoding.UTF8.GetBytes(content.ToString());
+                return Task.FromResult(System.Text.Encoding.UTF8.GetBytes(content.ToString()));
             }
             catch (Exception ex)
             {

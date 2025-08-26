@@ -34,7 +34,17 @@ public class Employee : BaseEntity
     [StringLength(100)]
     public string? Designation { get; set; }
     
+    [StringLength(100)]
+    public string? Position { get; set; }
+    
     public DateTime? JoiningDate { get; set; }
+    
+    public DateTime? HireDate { get; set; }
+    
+    public decimal? Salary { get; set; }
+    
+    [StringLength(500)]
+    public string? Address { get; set; }
     
     public bool IsActive { get; set; } = true;
     

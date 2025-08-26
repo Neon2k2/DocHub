@@ -16,7 +16,7 @@ public class GeneratedLetter : BaseEntity
     
     public string EmployeeId { get; set; } = string.Empty;
     
-    public string DigitalSignatureId { get; set; } = string.Empty;
+    public string? DigitalSignatureId { get; set; }
     
     public string? LetterFilePath { get; set; }
     

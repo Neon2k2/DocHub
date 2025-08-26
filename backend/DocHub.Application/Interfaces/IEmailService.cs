@@ -17,6 +17,13 @@ namespace DocHub.Application.Interfaces
         Task<bool> IsEmailServiceAvailableAsync();
         Task<EmailProviderInfo> GetEmailProviderInfoAsync();
         Task<bool> ProcessWebhookEventAsync(string webhookPayload);
+        
+        // New enhanced email features
+        Task<bool> SendTemplatedEmailAsync(string toEmail, string templateId, Dictionary<string, string> templateData, List<string>? attachmentPaths = null);
+        Task<EmailDeliveryStatus> GetEmailDeliveryStatusAsync(string messageId);
+        Task<bool> SendScheduledEmailAsync(string toEmail, string subject, string body, DateTime scheduledTime, List<string>? attachmentPaths = null);
+        Task<bool> CancelScheduledEmailAsync(string messageId);
+        Task<EmailAnalytics> GetEmailAnalyticsAsync(DateTime startDate, DateTime endDate);
     }
 
     public class EmailAttachment
@@ -24,24 +31,5 @@ namespace DocHub.Application.Interfaces
         public required string FileName { get; set; }
         public required byte[] Content { get; set; }
         public required string ContentType { get; set; }
-    }
-
-    public class EmailStatus
-    {
-        public required string Id { get; set; }
-        public required string ToEmail { get; set; }
-        public required string Subject { get; set; }
-        public required string Status { get; set; }
-        public DateTime SentAt { get; set; }
-        public string? ErrorMessage { get; set; }
-        public int RetryCount { get; set; }
-    }
-
-    public class EmailProviderInfo
-    {
-        public required string Provider { get; set; }
-        public bool IsAvailable { get; set; }
-        public int RemainingQuota { get; set; }
-        public DateTime LastChecked { get; set; }
     }
 }

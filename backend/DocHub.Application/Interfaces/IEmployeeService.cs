@@ -5,9 +5,9 @@ namespace DocHub.Application.Interfaces;
 public interface IEmployeeService
 {
     Task<IEnumerable<Employee>> GetAllAsync();
-    Task<Employee> GetByIdAsync(string id);
-    Task<Employee> GetByEmployeeIdAsync(string employeeId);
-    Task<Employee> GetByEmailAsync(string email);
+    Task<Employee?> GetByIdAsync(string id);
+    Task<Employee?> GetByEmployeeIdAsync(string employeeId);
+    Task<Employee?> GetByEmailAsync(string email);
     Task<Employee> CreateAsync(Employee employee);
     Task<Employee> UpdateAsync(string id, Employee employee);
     Task<bool> DeleteAsync(string id);
@@ -18,4 +18,5 @@ public interface IEmployeeService
     Task<IEnumerable<Employee>> SearchAsync(string searchTerm);
     Task<int> GetTotalCountAsync();
     Task<IEnumerable<Employee>> GetPagedAsync(int page, int pageSize);
+    Task<IEnumerable<Employee>> GetEmployeesByIdsAsync(List<string> employeeIds);
 }

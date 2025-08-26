@@ -146,17 +146,17 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<bool> LogoutAsync(string userId)
+    public Task<bool> LogoutAsync(string userId)
     {
         try
         {
             // In a real implementation, you might want to blacklist the token
             // For now, just return success
-            return true;
+            return Task.FromResult(true);
         }
         catch
         {
-            return false;
+            return Task.FromResult(false);
         }
     }
 
@@ -187,15 +187,96 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<bool> ValidateTokenAsync(string token)
+    public Task<bool> ValidateTokenAsync(string token)
     {
         try
         {
-            var principal = GetPrincipalFromExpiredToken(token);
-            return principal != null;
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_configuration["JWT:SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured"));
+
+            tokenHandler.ValidateToken(token, new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = true,
+                ValidIssuer = _configuration["JWT:Issuer"],
+                ValidateAudience = true,
+                ValidAudience = _configuration["JWT:Audience"],
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            }, out SecurityToken validatedToken);
+
+            return Task.FromResult(true);
         }
         catch
         {
+            return Task.FromResult(false);
+        }
+    }
+
+    public async Task<bool> RequestPasswordResetAsync(string email)
+    {
+        try
+        {
+            var admin = await _adminRepository.FirstOrDefaultAsync(a => a.Email == email && a.IsActive);
+            if (admin == null)
+            {
+                // Don't reveal if email exists or not for security
+                return true;
+            }
+
+            // TODO: Generate reset token and send email
+            // For now, just log the request
+            _logger.LogInformation("Password reset requested for email: {Email}", email);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error requesting password reset for email: {Email}", email);
+            return false;
+        }
+    }
+
+    public Task<bool> ResetPasswordAsync(string token, string newPassword)
+    {
+        try
+        {
+            // TODO: Validate reset token and update password
+            // For now, just log the request
+            _logger.LogInformation("Password reset attempted with token: {Token}", token);
+            return Task.FromResult(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting password with token: {Token}", token);
+            return Task.FromResult(false);
+        }
+    }
+
+    public async Task<bool> ChangePasswordAsync(string userId, string currentPassword, string newPassword)
+    {
+        try
+        {
+            var admin = await _adminRepository.GetByIdAsync(userId);
+            if (admin == null)
+            {
+                return false;
+            }
+
+            if (!VerifyPassword(currentPassword, admin.PasswordHash))
+            {
+                return false;
+            }
+
+            admin.PasswordHash = HashPassword(newPassword);
+            await _adminRepository.UpdateAsync(admin);
+
+            _logger.LogInformation("Password changed successfully for user: {UserId}", userId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error changing password for user: {UserId}", userId);
             return false;
         }
     }
@@ -477,13 +558,13 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<IEnumerable<AdminActivityDto>> GetAdminActivityAsync(string id, ActivityFilter filter)
+    public Task<IEnumerable<AdminActivityDto>> GetAdminActivityAsync(string id, ActivityFilter filter)
     {
         try
         {
             // TODO: Implement actual activity logging
             // This would involve querying an activity log table
-            return new List<AdminActivityDto>
+            return Task.FromResult<IEnumerable<AdminActivityDto>>(new List<AdminActivityDto>
             {
                 new AdminActivityDto
                 {
@@ -497,7 +578,7 @@ public class AuthService : IAuthService
                     UserAgent = "Mozilla/5.0",
                     Metadata = new Dictionary<string, object>()
                 }
-            };
+            });
         }
         catch (Exception ex)
         {

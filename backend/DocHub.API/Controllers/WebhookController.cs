@@ -56,7 +56,7 @@ public class WebhookController : ControllerBase
     /// Handle generic webhook events
     /// </summary>
     [HttpPost("generic")]
-    public async Task<IActionResult> GenericWebhook([FromBody] object webhookData)
+    public IActionResult GenericWebhook([FromBody] object webhookData)
     {
         try
         {

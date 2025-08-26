@@ -6,8 +6,8 @@ namespace DocHub.Application.Interfaces
     public interface IGeneratedLetterService
     {
         Task<IEnumerable<GeneratedLetter>> GetAllAsync();
-        Task<GeneratedLetter> GetByIdAsync(string id);
-        Task<GeneratedLetter> GetByLetterNumberAsync(string letterNumber);
+        Task<GeneratedLetter?> GetByIdAsync(string id);
+        Task<GeneratedLetter?> GetByLetterNumberAsync(string letterNumber);
         Task<GeneratedLetter> CreateAsync(GeneratedLetter letter);
         Task<GeneratedLetter> UpdateAsync(string id, GeneratedLetter letter);
         Task<bool> DeleteAsync(string id);

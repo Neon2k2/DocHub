@@ -12,7 +12,7 @@ public class PROXKeyService : IPROXKeyService
 {
     private readonly ILogger<PROXKeyService> _logger;
     private readonly AppConfiguration _config;
-    private SerialPort? _serialPort;
+    private SerialPort? _serialPort = null;
     private readonly object _lockObject = new object();
 
     public PROXKeyService(ILogger<PROXKeyService> logger, AppConfiguration config)
@@ -203,45 +203,45 @@ public class PROXKeyService : IPROXKeyService
         }
     }
 
-    public async Task<bool> ValidateSignatureAsync(string signatureData)
+    public Task<bool> ValidateSignatureAsync(string signatureData)
     {
         try
         {
             if (string.IsNullOrEmpty(signatureData))
-                return false;
+                return Task.FromResult(false);
 
             // Basic validation - check if signature data is not empty
-            return signatureData.Length > 0;
+            return Task.FromResult(signatureData.Length > 0);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating signature");
-            return false;
+            return Task.FromResult(false);
         }
     }
 
-    public async Task<byte[]> GetSignatureImageAsync(string signatureId)
+    public Task<byte[]> GetSignatureImageAsync(string signatureId)
     {
         try
         {
             // Mock implementation - return a simple image
-            return new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }; // PNG header
+            return Task.FromResult(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }); // PNG header
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting signature image for {SignatureId}", signatureId);
-            return Array.Empty<byte>();
+            return Task.FromResult(Array.Empty<byte>());
         }
     }
 
-    public async Task<DigitalSignature> UpdateSignatureAsync(string signatureId, DigitalSignature signature)
+    public Task<DigitalSignature> UpdateSignatureAsync(string signatureId, DigitalSignature signature)
     {
         try
         {
             // Mock implementation - return the updated signature
             signature.Id = signatureId;
             signature.UpdatedAt = DateTime.UtcNow;
-            return signature;
+            return Task.FromResult(signature);
         }
         catch (Exception ex)
         {
@@ -250,41 +250,41 @@ public class PROXKeyService : IPROXKeyService
         }
     }
 
-    public async Task<bool> DeleteSignatureAsync(string signatureId)
+    public Task<bool> DeleteSignatureAsync(string signatureId)
     {
         try
         {
             // Mock implementation - always return true
             _logger.LogInformation("Signature {SignatureId} deleted successfully", signatureId);
-            return true;
+            return Task.FromResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting signature {SignatureId}", signatureId);
-            return false;
+            return Task.FromResult(false);
         }
     }
 
-    public async Task<List<DigitalSignature>> GetSignaturesByAuthorityAsync(string authorityName)
+    public Task<List<DigitalSignature>> GetSignaturesByAuthorityAsync(string authorityName)
     {
         try
         {
             // Mock implementation - return empty list
-            return new List<DigitalSignature>();
+            return Task.FromResult(new List<DigitalSignature>());
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting signatures for authority {AuthorityName}", authorityName);
-            return new List<DigitalSignature>();
+            return Task.FromResult(new List<DigitalSignature>());
         }
     }
 
-    public async Task<DigitalSignature> GetLatestSignatureAsync()
+    public Task<DigitalSignature> GetLatestSignatureAsync()
     {
         try
         {
             // Mock implementation - return a mock signature
-            return new DigitalSignature
+            return Task.FromResult(new DigitalSignature
             {
                 Id = Guid.NewGuid().ToString(),
                 AuthorityName = "Mock Authority",
@@ -293,7 +293,7 @@ public class PROXKeyService : IPROXKeyService
                 SignatureName = "Mock Signature",
                 SignatureDate = DateTime.UtcNow,
                 IsActive = true
-            };
+            });
         }
         catch (Exception ex)
         {
@@ -369,12 +369,12 @@ public class PROXKeyService : IPROXKeyService
         return null;
     }
 
-    private async Task<DigitalSignature> GenerateSimulatedSignatureAsync(string authorityName, string authorityDesignation)
+    private Task<DigitalSignature> GenerateSimulatedSignatureAsync(string authorityName, string authorityDesignation)
     {
         // Generate a realistic simulated signature
         var signatureData = Convert.ToBase64String(Encoding.UTF8.GetBytes($"SIMULATED_SIGNATURE_{authorityName}_{DateTime.Now.Ticks}"));
         
-        return new DigitalSignature
+        return Task.FromResult(new DigitalSignature
         {
             Id = Guid.NewGuid().ToString(),
             AuthorityName = authorityName,
@@ -386,13 +386,13 @@ public class PROXKeyService : IPROXKeyService
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             CreatedBy = "Simulation Mode"
-        };
+        });
     }
 
-    private async Task<DigitalSignature> GetStoredSignatureAsync(string authorityName, string authorityDesignation)
+    private Task<DigitalSignature> GetStoredSignatureAsync(string authorityName, string authorityDesignation)
     {
         // Return a stored signature if available, otherwise create a new one
-        return new DigitalSignature
+        return Task.FromResult(new DigitalSignature
         {
             Id = Guid.NewGuid().ToString(),
             AuthorityName = authorityName,
@@ -404,7 +404,7 @@ public class PROXKeyService : IPROXKeyService
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             CreatedBy = "System"
-        };
+        });
     }
 
     private SerialPort? CreateSerialPort()

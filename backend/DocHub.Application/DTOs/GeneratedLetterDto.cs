@@ -9,7 +9,7 @@ public class GeneratedLetterDto
     public string LetterType { get; set; } = string.Empty;
     public string LetterTemplateId { get; set; } = string.Empty;
     public string EmployeeId { get; set; } = string.Empty;
-    public string DigitalSignatureId { get; set; } = string.Empty;
+    public string? DigitalSignatureId { get; set; }
     public string? LetterFilePath { get; set; }
     public string Status { get; set; } = "Generated";
     public DateTime? GeneratedAt { get; set; }
@@ -46,7 +46,7 @@ public class CreateGeneratedLetterDto
     public string? Content { get; set; }
     public string LetterTemplateId { get; set; } = string.Empty;
     public string EmployeeId { get; set; } = string.Empty;
-    public string DigitalSignatureId { get; set; } = string.Empty;
+    public string? DigitalSignatureId { get; set; }
     public string? EmailBody { get; set; }
     public string? EmailSubject { get; set; }
     public List<LetterAttachmentDto> Attachments { get; set; } = new();

@@ -6,13 +6,17 @@ public class BulkLetterGenerationRequest
     public string LetterType { get; set; } = string.Empty;
     public string TemplateId { get; set; } = string.Empty;
     public Dictionary<string, object>? AdditionalData { get; set; }
+    public bool SendEmail { get; set; } = false;
+    public string? EmailSubject { get; set; }
+    public string? EmailBody { get; set; }
+    public string? DigitalSignatureId { get; set; }
 }
 
 public class GenerateBulkLettersRequest
 {
     public string LetterTemplateId { get; set; } = string.Empty;
     public List<string> EmployeeIds { get; set; } = new List<string>();
-    public string DigitalSignatureId { get; set; } = string.Empty;
+    public string? DigitalSignatureId { get; set; }
     public Dictionary<string, string> FieldValues { get; set; } = new Dictionary<string, string>();
     public List<string> AttachmentPaths { get; set; } = new List<string>();
 }

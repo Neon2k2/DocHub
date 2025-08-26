@@ -29,7 +29,7 @@ public class LetterTemplateService : ILetterTemplateService
             .ToListAsync();
     }
 
-    public async Task<LetterTemplate> GetByIdAsync(string id)
+    public async Task<LetterTemplate?> GetByIdAsync(string id)
     {
         return await _context.LetterTemplates
             .Include(t => t.Fields)
@@ -117,7 +117,7 @@ public class LetterTemplateService : ILetterTemplateService
             .ToListAsync();
     }
 
-    public async Task<LetterTemplate> GetByNameAsync(string name)
+    public async Task<LetterTemplate?> GetByNameAsync(string name)
     {
         return await _context.LetterTemplates
             .Include(t => t.Fields)

@@ -126,3 +126,102 @@ public class EmailAttachmentDto
     public long FileSize { get; set; }
     public DateTime CreatedAt { get; set; }
 }
+
+public class EmailDeliveryStatus
+{
+    public string MessageId { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty; // sent, delivered, failed, bounced, etc.
+    public DateTime? SentAt { get; set; }
+    public DateTime? DeliveredAt { get; set; }
+    public DateTime? FailedAt { get; set; }
+    public string? Error { get; set; }
+    public int RetryCount { get; set; }
+    public DateTime? LastRetryAt { get; set; }
+    public string? ProviderResponse { get; set; }
+}
+
+public class EmailAnalytics
+{
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public int TotalEmailsSent { get; set; }
+    public int TotalEmailsDelivered { get; set; }
+    public int TotalEmailsFailed { get; set; }
+    public double DeliveryRate { get; set; }
+    public TimeSpan AverageDeliveryTime { get; set; }
+    public List<string> TopRecipients { get; set; } = new List<string>();
+    public List<string> TopSubjects { get; set; } = new List<string>();
+    public Dictionary<string, int> StatusBreakdown { get; set; } = new Dictionary<string, int>();
+    public Dictionary<string, int> ProviderBreakdown { get; set; } = new Dictionary<string, int>();
+    public string? Error { get; set; }
+}
+
+public class ScheduledEmailDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string ToEmail { get; set; } = string.Empty;
+    public string Subject { get; set; } = string.Empty;
+    public string Body { get; set; } = string.Empty;
+    public DateTime ScheduledTime { get; set; }
+    public string Status { get; set; } = string.Empty; // scheduled, sent, cancelled, failed
+    public DateTime CreatedAt { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
+    public List<string> AttachmentPaths { get; set; } = new List<string>();
+    public string? TemplateId { get; set; }
+    public Dictionary<string, string>? TemplateData { get; set; }
+}
+
+public class CreateScheduledEmailRequest
+{
+    [Required]
+    [EmailAddress]
+    public string ToEmail { get; set; } = string.Empty;
+    
+    [Required]
+    public string Subject { get; set; } = string.Empty;
+    
+    [Required]
+    public string Body { get; set; } = string.Empty;
+    
+    [Required]
+    public DateTime ScheduledTime { get; set; }
+    
+    public List<string> AttachmentPaths { get; set; } = new List<string>();
+    public string? TemplateId { get; set; }
+    public Dictionary<string, string>? TemplateData { get; set; }
+}
+
+public class EmailTemplateDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty; // welcome, password-reset, letter-generated, etc.
+    public bool IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
+    public Dictionary<string, string> Placeholders { get; set; } = new Dictionary<string, string>();
+}
+
+public class EmailProviderInfo
+{
+    public string Provider { get; set; } = string.Empty;
+    public bool IsAvailable { get; set; }
+    public int RemainingQuota { get; set; } // -1 means unlimited or unknown
+    public DateTime LastChecked { get; set; }
+    public string? Status { get; set; }
+    public Dictionary<string, object>? AdditionalInfo { get; set; }
+}
+
+public class EmailStatus
+{
+    public string Id { get; set; } = string.Empty;
+    public string ToEmail { get; set; } = string.Empty;
+    public string Subject { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public DateTime SentAt { get; set; }
+    public string? ErrorMessage { get; set; }
+    public int RetryCount { get; set; }
+}

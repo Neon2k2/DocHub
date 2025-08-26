@@ -6,12 +6,12 @@ namespace DocHub.Application.Interfaces;
 public interface ILetterTemplateService
 {
     Task<IEnumerable<LetterTemplate>> GetAllAsync();
-    Task<LetterTemplate> GetByIdAsync(string id);
+    Task<LetterTemplate?> GetByIdAsync(string id);
     Task<LetterTemplate> CreateAsync(LetterTemplate template);
     Task<LetterTemplate> UpdateAsync(string id, LetterTemplate template);
     Task<bool> DeleteAsync(string id);
     Task<IEnumerable<LetterTemplate>> GetActiveTemplatesAsync();
-    Task<LetterTemplate> GetByNameAsync(string name);
+    Task<LetterTemplate?> GetByNameAsync(string name);
     Task<IEnumerable<LetterTemplate>> GetByDataSourceAsync(string dataSource);
             Task<bool> ExistsAsync(string name);
         Task<int> GetNextSortOrderAsync();
