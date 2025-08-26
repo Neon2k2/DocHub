@@ -1,0 +1,279 @@
+<div class="data-table-container">
+  <!-- Table Header with Search and Actions -->
+  <div class="table-header" *ngIf="config.showSearch || config.showActions">
+    <div class="header-left">
+      <!-- Search Field -->
+      <mat-form-field appearance="outline" class="search-field" *ngIf="config.showSearch">
+        <mat-label>Search</mat-label>
+        <input matInput [(ngModel)]="searchTerm" 
+               placeholder="Search {{ config.searchPlaceholder || 'data' }}..."
+               (input)="onSearchChange()">
+        <mat-icon matSuffix>search</mat-icon>
+        <button mat-icon-button matSuffix *ngIf="searchTerm" (click)="clearSearch()">
+          <mat-icon>clear</mat-icon>
+        </button>
+      </mat-form-field>
+    </div>
+
+    <div class="header-right">
+      <!-- Bulk Actions -->
+      <div class="bulk-actions" *ngIf="config.showBulkActions && selection.hasValue()">
+        <span class="selected-count">
+          {{ selection.selected.length }} item(s) selected
+        </span>
+        <button mat-stroked-button color="warn" (click)="bulkDelete()" 
+                *ngIf="config.allowBulkDelete" class="bulk-action-btn">
+          <mat-icon>delete</mat-icon>
+          Delete Selected
+        </button>
+        <button mat-stroked-button (click)="bulkExport()" 
+                *ngIf="config.allowBulkExport" class="bulk-action-btn">
+          <mat-icon>file_download</mat-icon>
+          Export Selected
+        </button>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons" *ngIf="config.showActions">
+        <button mat-stroked-button (click)="refreshData()" class="action-btn">
+          <mat-icon>refresh</mat-icon>
+          Refresh
+        </button>
+        <button mat-stroked-button (click)="exportData()" 
+                *ngIf="config.allowExport" class="action-btn">
+          <mat-icon>file_download</mat-icon>
+          Export
+        </button>
+        <button mat-raised-button color="primary" (click)="addNew()" 
+                *ngIf="config.allowAdd" class="action-btn">
+          <mat-icon>add</mat-icon>
+          Add New
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Table -->
+  <div class="table-wrapper">
+    <table mat-table [dataSource]="dataSource" matSort class="data-table" 
+           [class.editable-table]="config.allowInlineEdit">
+      
+      <!-- Checkbox Column for Selection -->
+      <ng-container matColumnDef="select" *ngIf="config.allowSelection">
+        <th mat-header-cell *matHeaderCellDef>
+          <mat-checkbox (change)="$event ? masterToggle() : null"
+                       [checked]="selection.hasValue() && isAllSelected()"
+                       [indeterminate]="selection.hasValue() && !isAllSelected()">
+          </mat-checkbox>
+        </th>
+        <td mat-cell *matCellDef="let row">
+          <mat-checkbox (click)="$event.stopPropagation()"
+                       (change)="$event ? selection.toggle(row) : null"
+                       [checked]="selection.isSelected(row)">
+          </mat-checkbox>
+        </td>
+      </ng-container>
+
+      <!-- Dynamic Columns -->
+      <ng-container *ngFor="let column of tableData.columns" 
+                    [matColumnDef]="column.key">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header 
+            [class.sortable]="column.sortable !== false">
+          {{ column.label }}
+        </th>
+        <td mat-cell *matCellDef="let row" 
+            [class.editable-cell]="column.editable && config.allowInlineEdit">
+          
+          <!-- Editable Cell -->
+          <div class="cell-content" *ngIf="!column.editable || !config.allowInlineEdit || !isEditing(row)">
+            <ng-container [ngSwitch]="column.type">
+              
+              <!-- Text Type -->
+              <span *ngSwitchCase="'text'">{{ getCellValue(row, column) }}</span>
+              
+              <!-- Number Type -->
+              <span *ngSwitchCase="'number'">{{ getCellValue(row, column) | number }}</span>
+              
+              <!-- Date Type -->
+              <span *ngSwitchCase="'date'">{{ getCellValue(row, column) | date:'short' }}</span>
+              
+              <!-- Boolean Type -->
+              <span *ngSwitchCase="'boolean'">
+                <mat-icon [class]="getCellValue(row, column) ? 'success' : 'error'">
+                  {{ getCellValue(row, column) ? 'check_circle' : 'cancel' }}
+                </mat-icon>
+              </span>
+              
+              <!-- Status Type -->
+              <span *ngSwitchCase="'status'">
+                <mat-chip [color]="getStatusColor(getCellValue(row, column))" 
+                         [selected]="true">
+                  {{ getCellValue(row, column) }}
+                </mat-chip>
+              </span>
+              
+              <!-- Image Type -->
+              <span *ngSwitchCase="'image'">
+                <img [src]="getCellValue(row, column)" 
+                     [alt]="column.altText || 'Image'"
+                     class="cell-image"
+                     *ngIf="getCellValue(row, column)">
+                <span *ngIf="!getCellValue(row, column)">No image</span>
+              </span>
+              
+              <!-- Link Type -->
+              <span *ngSwitchCase="'link'">
+                <a [href]="getCellValue(row, column)" 
+                   target="_blank"
+                   class="cell-link">
+                  {{ column.linkText || 'View' }}
+                </a>
+              </span>
+              
+              <!-- Default Text -->
+              <span *ngSwitchDefault>{{ getCellValue(row, column) }}</span>
+            </ng-container>
+          </div>
+
+          <!-- Edit Mode -->
+          <div class="edit-cell" *ngIf="column.editable && config.allowInlineEdit && isEditing(row)">
+            <ng-container [ngSwitch]="column.type">
+              
+              <!-- Text Input -->
+              <input matInput *ngSwitchCase="'text'"
+                     [value]="getCellValue(row, column)"
+                     (blur)="saveCellEdit(row, column, $event.target.value)"
+                     (keyup.enter)="saveCellEdit(row, column, $event.target.value)"
+                     (keyup.escape)="cancelCellEdit(row, column)"
+                     class="edit-input">
+              
+              <!-- Number Input -->
+              <input matInput *ngSwitchCase="'number'"
+                     type="number"
+                     [value]="getCellValue(row, column)"
+                     (blur)="saveCellEdit(row, column, $event.target.value)"
+                     (keyup.enter)="saveCellEdit(row, column, $event.target.value)"
+                     (keyup.escape)="cancelCellEdit(row, column)"
+                     class="edit-input">
+              
+              <!-- Date Input -->
+              <input matInput *ngSwitchCase="'date'"
+                     type="date"
+                     [value]="getCellValue(row, column)"
+                     (blur)="saveCellEdit(row, column, $event.target.value)"
+                     (keyup.enter)="saveCellEdit(row, column, $event.target.value)"
+                     (keyup.escape)="cancelCellEdit(row, column)"
+                     class="edit-input">
+              
+              <!-- Boolean Toggle -->
+              <mat-slide-toggle *ngSwitchCase="'boolean'"
+                               [checked]="getCellValue(row, column)"
+                               (change)="saveCellEdit(row, column, $event.checked)"
+                               class="edit-toggle">
+              </mat-slide-toggle>
+              
+              <!-- Select Dropdown -->
+              <mat-select *ngSwitchCase="'select'"
+                         [value]="getCellValue(row, column)"
+                         (selectionChange)="saveCellEdit(row, column, $event.value)"
+                         class="edit-select">
+                <mat-option *ngFor="let option of column.options" 
+                           [value]="option.value">
+                  {{ option.label }}
+                </mat-option>
+              </mat-select>
+              
+              <!-- Default Text Input -->
+              <input matInput *ngSwitchDefault
+                     [value]="getCellValue(row, column)"
+                     (blur)="saveCellEdit(row, column, $event.target.value)"
+                     (keyup.enter)="saveCellEdit(row, column, $event.target.value)"
+                     (keyup.escape)="cancelCellEdit(row, column)"
+                     class="edit-input">
+            </ng-container>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions" *ngIf="config.showActions">
+        <th mat-header-cell *matHeaderCellDef> Actions </th>
+        <td mat-cell *matCellDef="let row">
+          <button mat-icon-button [matMenuTriggerFor]="menu" class="action-menu-btn">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="viewRow(row)">
+              <mat-icon>visibility</mat-icon>
+              <span>View</span>
+            </button>
+            <button mat-menu-item (click)="editRow(row)" 
+                    *ngIf="config.allowEdit">
+              <mat-icon>edit</mat-icon>
+              <span>Edit</span>
+            </button>
+            <button mat-menu-item (click)="duplicateRow(row)" 
+                    *ngIf="config.allowDuplicate">
+              <mat-icon>content_copy</mat-icon>
+              <span>Duplicate</span>
+            </button>
+            <mat-divider></mat-divider>
+            <button mat-menu-item (click)="deleteRow(row)" 
+                    *ngIf="config.allowDelete"
+                    class="danger-action">
+              <mat-icon>delete</mat-icon>
+              <span>Delete</span>
+            </button>
+          </mat-menu>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+          [class.selected-row]="selection.isSelected(row)"
+          [class.editing-row]="isEditing(row)"
+          (click)="onRowClick(row, $event)"
+          (dblclick)="onRowDoubleClick(row)">
+      </tr>
+    </table>
+
+    <!-- Loading Spinner -->
+    <div class="loading-container" *ngIf="loading">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Loading data...</p>
+    </div>
+
+    <!-- No Data Message -->
+    <div class="no-data-container" *ngIf="!loading && dataSource.data.length === 0">
+      <mat-icon class="no-data-icon">{{ config.noDataIcon || 'data_usage' }}</mat-icon>
+      <h3>{{ config.noDataTitle || 'No data found' }}</h3>
+      <p>{{ config.noDataMessage || 'No data matches your current filters or no data exists yet.' }}</p>
+      <button mat-raised-button color="primary" (click)="addNew()" 
+              *ngIf="config.allowAdd && config.showNoDataAction">
+        <mat-icon>add</mat-icon>
+        {{ config.noDataActionText || 'Add New' }}
+      </button>
+    </div>
+
+    <!-- Pagination -->
+    <mat-paginator [pageSizeOptions]="config.pageSizeOptions || [10, 25, 50, 100]" 
+                   showFirstLastButtons
+                   [pageSize]="config.defaultPageSize || 25"
+                   aria-label="Select page of data">
+    </mat-paginator>
+  </div>
+
+  <!-- Table Footer with Summary -->
+  <div class="table-footer" *ngIf="config.showFooter">
+    <div class="footer-left">
+      <span class="data-summary">
+        Showing {{ getDisplayedRange() }} of {{ dataSource.data.length }} entries
+      </span>
+    </div>
+    <div class="footer-right">
+      <span class="last-updated" *ngIf="lastUpdated">
+        Last updated: {{ lastUpdated | date:'short' }}
+      </span>
+    </div>
+  </div>
+</div>

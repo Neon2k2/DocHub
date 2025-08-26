@@ -1,0 +1,240 @@
+<div class="admin-dashboard">
+  <!-- Header -->
+  <div class="dashboard-header">
+    <h1>Admin Dashboard</h1>
+    <div class="header-actions">
+      <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="isRefreshing">
+        <mat-icon>{{ isRefreshing ? 'refresh' : 'refresh' }}</mat-icon>
+        {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    <p>Loading dashboard data...</p>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div *ngIf="!isLoading" class="dashboard-content">
+    
+    <!-- Statistics Cards -->
+    <div class="stats-grid" *ngIf="dashboardStats">
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-header">
+            <mat-icon color="primary">description</mat-icon>
+            <span class="stat-title">Templates</span>
+          </div>
+          <div class="stat-value">{{ formatNumber(dashboardStats.totalTemplates) }}</div>
+          <div class="stat-details">
+            <span class="active-count">{{ dashboardStats.activeTemplates }} active</span>
+            <mat-progress-bar 
+              [value]="getProgressValue(dashboardStats.activeTemplates, dashboardStats.totalTemplates)"
+              color="primary">
+            </mat-progress-bar>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-header">
+            <mat-icon color="accent">people</mat-icon>
+            <span class="stat-title">Employees</span>
+          </div>
+          <div class="stat-value">{{ formatNumber(dashboardStats.totalEmployees) }}</div>
+          <div class="stat-details">
+            <span class="active-count">{{ dashboardStats.activeEmployees }} active</span>
+            <mat-progress-bar 
+              [value]="getProgressValue(dashboardStats.activeEmployees, dashboardStats.totalEmployees)"
+              color="accent">
+            </mat-progress-bar>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-header">
+            <mat-icon color="warn">mail</mat-icon>
+            <span class="stat-title">Letters Generated</span>
+          </div>
+          <div class="stat-value">{{ formatNumber(dashboardStats.totalLetters) }}</div>
+          <div class="stat-details">
+            <span class="success-rate" [ngClass]="'rate-' + getSuccessRateColor(dashboardStats.successRate)">
+              {{ dashboardStats.successRate }}% success rate
+            </span>
+            <mat-progress-bar 
+              [value]="dashboardStats.successRate"
+              [color]="getSuccessRateColor(dashboardStats.successRate)">
+            </mat-progress-bar>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-header">
+            <mat-icon color="primary">verified</mat-icon>
+            <span class="stat-title">Digital Signatures</span>
+          </div>
+          <div class="stat-value">{{ formatNumber(dashboardStats.totalSignatures) }}</div>
+          <div class="stat-details">
+            <span class="active-count">{{ dashboardStats.activeSignatures }} active</span>
+            <mat-progress-bar 
+              [value]="getProgressValue(dashboardStats.activeSignatures, dashboardStats.totalSignatures)"
+              color="primary">
+            </mat-progress-bar>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Letter Status Summary -->
+    <div class="status-summary" *ngIf="dashboardStats">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Letter Generation Status</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="status-grid">
+            <div class="status-item">
+              <div class="status-label">Generated</div>
+              <div class="status-value success">{{ formatNumber(dashboardStats.lettersGenerated) }}</div>
+            </div>
+            <div class="status-item">
+              <div class="status-label">Sent</div>
+              <div class="status-value primary">{{ formatNumber(dashboardStats.lettersSent) }}</div>
+            </div>
+            <div class="status-item">
+              <div class="status-label">Failed</div>
+              <div class="status-value error">{{ formatNumber(dashboardStats.lettersFailed) }}</div>
+            </div>
+            <div class="status-item">
+              <div class="status-label">This Week</div>
+              <div class="status-value accent">{{ formatNumber(dashboardStats.lettersThisWeek) }}</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- System Health -->
+    <div class="system-health" *ngIf="systemHealth">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon [color]="getStatusColor(systemHealth.status)">
+              {{ getStatusIcon(systemHealth.status) }}
+            </mat-icon>
+            System Health
+          </mat-card-title>
+          <mat-card-subtitle>
+            Last checked: {{ systemHealth.lastChecked | date:'medium' }}
+          </mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="health-status">
+            <mat-chip [color]="getStatusColor(systemHealth.status)" selected>
+              {{ systemHealth.status | titlecase }}
+            </mat-chip>
+            <p class="health-message">{{ systemHealth.message }}</p>
+          </div>
+          
+          <div class="services-list" *ngIf="systemHealth.services.length > 0">
+            <h4>Service Status</h4>
+            <mat-list>
+              <mat-list-item *ngFor="let service of systemHealth.services">
+                <mat-icon matListItemIcon [color]="getStatusColor(service.status)">
+                  {{ getStatusIcon(service.status) }}
+                </mat-icon>
+                <div matListItemTitle>{{ service.name }}</div>
+                <div matListItemLine>
+                  <span class="service-status">{{ service.status | titlecase }}</span>
+                  <span class="response-time" *ngIf="service.responseTime > 0">
+                    {{ service.responseTime }}ms
+                  </span>
+                </div>
+              </mat-list-item>
+            </mat-list>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Quick Actions</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="actions-grid">
+            <button 
+              *ngFor="let action of quickActions"
+              mat-raised-button 
+              color="primary"
+              class="action-button"
+              (click)="navigateToRoute(action.route)"
+              [matTooltip]="action.description">
+              <mat-icon>{{ action.icon }}</mat-icon>
+              <span>{{ action.name }}</span>
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Data Source Distribution -->
+    <div class="data-sources" *ngIf="dashboardStats">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Data Source Distribution</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="source-distribution">
+            <div class="source-item">
+              <div class="source-label">Upload Templates</div>
+              <div class="source-value">{{ formatNumber(dashboardStats.uploadTemplates) }}</div>
+              <mat-progress-bar 
+                [value]="getProgressValue(dashboardStats.uploadTemplates, dashboardStats.totalTemplates)"
+                color="accent">
+              </mat-progress-bar>
+            </div>
+            <div class="source-item">
+              <div class="source-label">Database Templates</div>
+              <div class="source-value">{{ formatNumber(dashboardStats.databaseTemplates) }}</div>
+              <mat-progress-bar 
+                [value]="getProgressValue(dashboardStats.databaseTemplates, dashboardStats.totalTemplates)"
+                color="primary">
+              </mat-progress-bar>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="recent-activity">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Recent Activity</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="activity-summary">
+            <div class="activity-item">
+              <mat-icon color="accent">person_add</mat-icon>
+              <span>{{ formatNumber(dashboardStats?.employeesAddedThisWeek || 0) }} employees added this week</span>
+            </div>
+            <div class="activity-item">
+              <mat-icon color="primary">schedule</mat-icon>
+              <span>System last updated: {{ currentDate | date:'medium' }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

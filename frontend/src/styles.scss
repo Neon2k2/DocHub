@@ -1,0 +1,265 @@
+/* Global Styles for DocHub */
+
+/* CSS Variables for theming */
+:root {
+  --primary-color: #1a1a1a;
+  --secondary-color: #2d2d2d;
+  --accent-color: #000000;
+  --background-color: #ffffff;
+  --surface-color: #f8fafc;
+  --text-color: #0f172a;
+  --text-secondary: #475569;
+  --border-color: #e2e8f0;
+  --hover-color: #f1f5f9;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --glow-color: rgba(26, 26, 26, 0.3);
+  
+  /* GitHub-like glassy effects */
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --neon-accent: #00d4ff;
+  --neon-glow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+/* Dark theme variables */
+.dark-theme {
+  --primary-color: #000000;
+  --secondary-color: #1a1a1a;
+  --accent-color: #2d2d2d;
+  --background-color: #0f172a;
+  --surface-color: #1e293b;
+  --text-color: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --border-color: #334155;
+  --hover-color: #475569;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --glow-color: rgba(0, 0, 0, 0.5);
+  
+  /* Dark theme glassy effects */
+  --glass-bg: rgba(0, 0, 0, 0.2);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --neon-accent: #00d4ff;
+  --neon-glow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--background-color);
+  color: var(--text-color);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* GitHub-like glassy card effects */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px var(--shadow-color);
+  border-color: var(--neon-accent);
+  box-shadow: var(--neon-glow);
+}
+
+/* Neon accent elements */
+.neon-accent {
+  color: var(--neon-accent);
+  text-shadow: var(--neon-glow);
+}
+
+.neon-border {
+  border-color: var(--neon-accent);
+  box-shadow: var(--neon-glow);
+}
+
+/* Material Design overrides with glassy effects */
+.mat-mdc-card {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--glass-shadow) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.mat-mdc-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 40px var(--shadow-color) !important;
+  border-color: var(--neon-accent) !important;
+  box-shadow: var(--neon-glow) !important;
+}
+
+.mat-mdc-button {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.025em !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.mat-mdc-raised-button {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.025em !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Enhanced button hover effects */
+.mat-mdc-button:hover,
+.mat-mdc-raised-button:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px var(--shadow-color) !important;
+}
+
+/* GitHub-like sidebar styling */
+.sidebar {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-right: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+/* Enhanced form controls */
+.mat-mdc-form-field {
+  border-radius: 12px !important;
+}
+
+.mat-mdc-input-element {
+  border-radius: 8px !important;
+}
+
+/* Table enhancements */
+.mat-mdc-table {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+
+.mat-mdc-header-row {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+/* Loading and spinner enhancements */
+.mat-mdc-progress-spinner circle {
+  stroke: var(--neon-accent) !important;
+}
+
+/* Toast notifications with glassy effect */
+.toast-container {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+/* Responsive design enhancements */
+@media (max-width: 768px) {
+  .glass-card {
+    border-radius: 12px;
+  }
+  
+  .mat-mdc-card {
+    border-radius: 12px !important;
+  }
+}
+
+/* Animation keyframes for enhanced UX */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Apply animations to common elements */
+.fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}

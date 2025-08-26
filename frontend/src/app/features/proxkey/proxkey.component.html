@@ -1,0 +1,417 @@
+<div class="proxkey-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="header-content">
+      <div class="title-section">
+        <mat-icon class="header-icon">usb</mat-icon>
+        <h1>PROXKey Digital Signature Manager</h1>
+        <p class="subtitle">Manage your WD PROXKey device and generate digital signatures</p>
+      </div>
+      
+      <!-- Device Status Card -->
+      <mat-card class="status-card">
+        <mat-card-content>
+          <div class="status-content">
+            <mat-icon [class]="getDeviceStatusIcon()" [color]="getDeviceStatusColor()" class="status-icon">
+              {{ getDeviceStatusIcon() }}
+            </mat-icon>
+            <div class="status-info">
+              <h3>Device Status</h3>
+              <p class="status-text">{{ deviceStatus }}</p>
+              <div class="status-actions">
+                <button mat-button color="primary" (click)="checkDeviceStatus()" [disabled]="isLoading">
+                  <mat-icon>refresh</mat-icon>
+                  Refresh
+                </button>
+                <button mat-button color="accent" (click)="refreshDeviceInfo()" [disabled]="!deviceConnected || isLoading">
+                  <mat-icon>info</mat-icon>
+                  Device Info
+                </button>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <mat-tab-group class="feature-tabs">
+      
+      <!-- Device Information Tab -->
+      <mat-tab label="Device Info">
+        <div class="tab-content">
+          <mat-card *ngIf="deviceInfo" class="info-card">
+            <mat-card-header>
+              <mat-card-title>PROXKey Device Information</mat-card-title>
+              <mat-card-subtitle>Hardware token details and status</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="info-label">Device ID:</span>
+                  <span class="info-value">{{ deviceInfo.deviceId }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Serial Number:</span>
+                  <span class="info-value">{{ deviceInfo.serialNumber }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Firmware Version:</span>
+                  <span class="info-value">{{ deviceInfo.firmwareVersion }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Manufacturer:</span>
+                  <span class="info-value">{{ deviceInfo.manufacturer }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Initialized:</span>
+                  <span class="info-value">
+                    <mat-icon [color]="deviceInfo.isInitialized ? 'accent' : 'warn'">
+                      {{ deviceInfo.isInitialized ? 'check_circle' : 'error' }}
+                    </mat-icon>
+                    {{ deviceInfo.isInitialized ? 'Yes' : 'No' }}
+                  </span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Remaining Signatures:</span>
+                  <span class="info-value">{{ deviceInfo.remainingSignatures }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Last Used:</span>
+                  <span class="info-value">{{ deviceInfo.lastUsed | date:'medium' }}</span>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card *ngIf="!deviceInfo && deviceConnected" class="info-card">
+            <mat-card-content>
+              <div class="loading-content">
+                <mat-spinner diameter="40"></mat-spinner>
+                <p>Loading device information...</p>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card *ngIf="!deviceConnected" class="info-card">
+            <mat-card-content>
+              <div class="disconnected-content">
+                <mat-icon color="warn" class="disconnected-icon">usb_off</mat-icon>
+                <h3>Device Not Connected</h3>
+                <p>Please connect your WD PROXKey device to continue.</p>
+                <button mat-raised-button color="primary" (click)="checkDeviceStatus()">
+                  <mat-icon>refresh</mat-icon>
+                  Check Connection
+                </button>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- Generate Signature Tab -->
+      <mat-tab label="Generate Signature">
+        <div class="tab-content">
+          <mat-card class="action-card">
+            <mat-card-header>
+              <mat-card-title>Generate Digital Signature</mat-card-title>
+              <mat-card-subtitle>Create a new digital signature using your PROXKey device</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <form [formGroup]="signatureForm" class="signature-form">
+                <div class="form-row">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Authority Name</mat-label>
+                    <input matInput formControlName="authorityName" placeholder="Enter authority name">
+                    <mat-error *ngIf="signatureForm.get('authorityName')?.hasError('required')">
+                      Authority name is required
+                    </mat-error>
+                    <mat-error *ngIf="signatureForm.get('authorityName')?.hasError('minlength')">
+                      Authority name must be at least 2 characters
+                    </mat-error>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-row">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Authority Designation</mat-label>
+                    <input matInput formControlName="authorityDesignation" placeholder="Enter authority designation">
+                    <mat-error *ngIf="signatureForm.get('authorityDesignation')?.hasError('required')">
+                      Authority designation is required
+                    </mat-error>
+                    <mat-error *ngIf="signatureForm.get('authorityDesignation')?.hasError('minlength')">
+                      Authority designation must be at least 2 characters
+                    </mat-error>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-row">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Document Hash</mat-label>
+                    <input matInput formControlName="documentHash" placeholder="Document hash will be generated automatically">
+                    <mat-error *ngIf="signatureForm.get('documentHash')?.hasError('required')">
+                      Document hash is required
+                    </mat-error>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-row">
+                  <div class="file-upload-section">
+                    <label for="fileInput" class="file-upload-label">
+                      <mat-icon>upload_file</mat-icon>
+                      <span>Select Document for Hash Generation</span>
+                    </label>
+                    <input 
+                      id="fileInput" 
+                      type="file" 
+                      (change)="onFileSelected($event)" 
+                      accept=".pdf,.docx,.doc,.txt"
+                      class="file-input">
+                    <div *ngIf="selectedFile" class="selected-file">
+                      <mat-icon>description</mat-icon>
+                      <span>{{ selectedFile.name }}</span>
+                      <button mat-icon-button color="warn" (click)="selectedFile = null; documentHash = ''">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button 
+                    mat-raised-button 
+                    color="primary" 
+                    (click)="generateSignature()" 
+                    [disabled]="!signatureForm.valid || !deviceConnected || isLoading"
+                    class="action-button">
+                    <mat-icon>create</mat-icon>
+                    Generate Signature
+                  </button>
+                </div>
+              </form>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- Sign Document Tab -->
+      <mat-tab label="Sign Document">
+        <div class="tab-content">
+          <mat-card class="action-card">
+            <mat-card-header>
+              <mat-card-title>Sign Document with PROXKey</mat-card-title>
+              <mat-card-subtitle>Digitally sign a document using your PROXKey device</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <form [formGroup]="documentSignForm" class="document-sign-form">
+                <div class="form-row">
+                  <div class="file-upload-section">
+                    <label for="signFileInput" class="file-upload-label">
+                      <mat-icon>upload_file</mat-icon>
+                      <span>Select Document to Sign</span>
+                    </label>
+                    <input 
+                      id="signFileInput" 
+                      type="file" 
+                      (change)="onFileSelected($event)" 
+                      accept=".pdf,.docx,.doc,.txt"
+                      class="file-input">
+                    <div *ngIf="selectedFile" class="selected-file">
+                      <mat-icon>description</mat-icon>
+                      <span>{{ selectedFile.name }}</span>
+                      <button mat-icon-button color="warn" (click)="selectedFile = null">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Authority Name</mat-label>
+                    <input matInput formControlName="authorityName" placeholder="Enter authority name">
+                    <mat-error *ngIf="documentSignForm.get('authorityName')?.hasError('required')">
+                      Authority name is required
+                    </mat-error>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-row">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>PIN</mat-label>
+                    <input matInput type="password" formControlName="pin" placeholder="Enter your PROXKey PIN">
+                    <mat-error *ngIf="documentSignForm.get('pin')?.hasError('required')">
+                      PIN is required
+                    </mat-error>
+                    <mat-error *ngIf="documentSignForm.get('pin')?.hasError('minlength')">
+                      PIN must be at least 4 characters
+                    </mat-error>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-actions">
+                  <button 
+                    mat-raised-button 
+                    color="accent" 
+                    (click)="signDocument()" 
+                    [disabled]="!documentSignForm.valid || !selectedFile || !deviceConnected || isLoading"
+                    class="action-button">
+                    <mat-icon>verified</mat-icon>
+                    Sign Document
+                  </button>
+                </div>
+              </form>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- Device Management Tab -->
+      <mat-tab label="Device Management">
+        <div class="tab-content">
+          <div class="management-grid">
+            
+            <!-- Change PIN Card -->
+            <mat-card class="management-card">
+              <mat-card-header>
+                <mat-card-title>Change PIN</mat-card-title>
+                <mat-card-subtitle>Update your PROXKey device PIN</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <form [formGroup]="pinChangeForm" class="pin-change-form">
+                  <div class="form-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Current PIN</mat-label>
+                      <input matInput type="password" formControlName="oldPin" placeholder="Enter current PIN">
+                      <mat-error *ngIf="pinChangeForm.get('oldPin')?.hasError('required')">
+                        Current PIN is required
+                      </mat-error>
+                    </mat-form-field>
+                  </div>
+
+                  <div class="form-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>New PIN</mat-label>
+                      <input matInput type="password" formControlName="newPin" placeholder="Enter new PIN">
+                      <mat-error *ngIf="pinChangeForm.get('newPin')?.hasError('required')">
+                        New PIN is required
+                      </mat-error>
+                      <mat-error *ngIf="pinChangeForm.get('newPin')?.hasError('minlength')">
+                        PIN must be at least 4 characters
+                      </mat-error>
+                    </mat-form-field>
+                  </div>
+
+                  <div class="form-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Confirm New PIN</mat-label>
+                      <input matInput type="password" formControlName="confirmPin" placeholder="Confirm new PIN">
+                      <mat-error *ngIf="pinChangeForm.get('confirmPin')?.hasError('required')">
+                        PIN confirmation is required
+                      </mat-error>
+                      <mat-error *ngIf="pinChangeForm.hasError('pinMismatch')">
+                        PINs do not match
+                      </mat-error>
+                    </mat-form-field>
+                  </div>
+
+                  <div class="form-actions">
+                    <button 
+                      mat-raised-button 
+                      color="primary" 
+                      (click)="changePin()" 
+                      [disabled]="!pinChangeForm.valid || !deviceConnected || isLoading"
+                      class="action-button">
+                      <mat-icon>lock</mat-icon>
+                      Change PIN
+                    </button>
+                  </div>
+                </form>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Device Reset Card -->
+            <mat-card class="management-card">
+              <mat-card-header>
+                <mat-card-title>Device Reset</mat-card-title>
+                <mat-card-subtitle>Reset your PROXKey device (use with caution)</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="reset-warning">
+                  <mat-icon color="warn" class="warning-icon">warning</mat-icon>
+                  <p><strong>Warning:</strong> This action will reset your PROXKey device and cannot be undone.</p>
+                  <p>All stored keys and certificates will be lost.</p>
+                </div>
+                
+                <div class="form-actions">
+                  <button 
+                    mat-raised-button 
+                    color="warn" 
+                    (click)="resetDevice()" 
+                    [disabled]="!deviceConnected || isLoading"
+                    class="action-button">
+                    <mat-icon>restore</mat-icon>
+                    Reset Device
+                  </button>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Generated Signatures Tab -->
+      <mat-tab label="Generated Signatures">
+        <div class="tab-content">
+          <mat-card class="signatures-card">
+            <mat-card-header>
+              <mat-card-title>Generated Digital Signatures</mat-card-title>
+              <mat-card-subtitle>View all signatures created with your PROXKey device</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div *ngIf="generatedSignatures.length === 0" class="no-signatures">
+                <mat-icon color="primary" class="no-data-icon">create</mat-icon>
+                <h3>No Signatures Generated</h3>
+                <p>Generate your first digital signature using the "Generate Signature" tab.</p>
+              </div>
+
+              <div *ngIf="generatedSignatures.length > 0" class="signatures-list">
+                <div *ngFor="let signature of generatedSignatures" class="signature-item">
+                  <div class="signature-info">
+                    <div class="signature-header">
+                      <h4>{{ signature.authorityName }}</h4>
+                      <span class="signature-date">{{ signature.createdAt | date:'medium' }}</span>
+                    </div>
+                    <p class="signature-designation">{{ signature.authorityDesignation }}</p>
+                    <div class="signature-meta">
+                      <span class="signature-id">ID: {{ signature.id }}</span>
+                      <span class="signature-status" [class]="signature.isActive ? 'active' : 'inactive'">
+                        {{ signature.isActive ? 'Active' : 'Inactive' }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="signature-actions">
+                    <button mat-icon-button color="primary" [matTooltip]="'View Signature'">
+                      <mat-icon>visibility</mat-icon>
+                    </button>
+                    <button mat-icon-button color="accent" [matTooltip]="'Download'">
+                      <mat-icon>download</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div *ngIf="isLoading" class="loading-overlay">
+    <mat-spinner diameter="60"></mat-spinner>
+    <p>Processing...</p>
+  </div>
+</div>

@@ -1,0 +1,150 @@
+<div class="app-container" [class.dark-theme]="isDarkTheme">
+  <!-- Top Navigation Bar -->
+  <header class="top-nav">
+    <div class="nav-left">
+      <div class="logo">
+        <span class="logo-icon">📄</span>
+        <span class="logo-text">DocHub</span>
+      </div>
+    </div>
+    
+    <div class="nav-center">
+      <div class="breadcrumb">
+        <span class="breadcrumb-item">{{ getCurrentPageTitle() }}</span>
+      </div>
+    </div>
+    
+    <div class="nav-right">
+      <button class="theme-toggle" (click)="toggleTheme()" [attr.aria-label]="isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'">
+        <span class="theme-icon">{{ isDarkTheme ? '☀️' : '🌙' }}</span>
+      </button>
+      
+      <div class="user-menu">
+        <div class="user-avatar" (click)="toggleUserMenu()">
+          <span class="avatar-text">👤</span>
+        </div>
+        <div class="user-dropdown" [class.show]="showUserMenu">
+          <div class="user-info">
+            <div class="user-name">Admin User</div>
+            <div class="user-email">admin&#64;dochub.com</div>
+          </div>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item" (click)="navigateToSettings()">
+            <span class="dropdown-icon">⚙️</span>
+            Settings
+          </button>
+          <button class="dropdown-item" (click)="logout()">
+            <span class="dropdown-icon">🚪</span>
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-layout">
+    <!-- Left Sidebar -->
+    <aside class="sidebar" [class.collapsed]="isSidebarCollapsed">
+      <div class="sidebar-header">
+        <button class="sidebar-toggle" (click)="toggleSidebar()">
+          <span class="toggle-icon">{{ isSidebarCollapsed ? '→' : '←' }}</span>
+        </button>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <!-- MAIN SECTION -->
+        <div class="nav-section">
+          <h3 class="nav-title">MAIN</h3>
+          <a routerLink="/history" routerLinkActive="active" class="nav-item" (click)="setActivePage('history')">
+            <span class="nav-icon">📧</span>
+            <span class="nav-text">Email History</span>
+          </a>
+          <a routerLink="/upload" routerLinkActive="active" class="nav-item" (click)="setActivePage('upload')">
+            <span class="nav-icon">📤</span>
+            <span class="nav-text">Upload Data</span>
+          </a>
+          <a routerLink="/generate" routerLinkActive="active" class="nav-item" (click)="setActivePage('generate')">
+            <span class="nav-icon">📝</span>
+            <span class="nav-text">Generate Letters</span>
+          </a>
+        </div>
+
+        <!-- LETTER TYPES SECTION -->
+        <div class="nav-section">
+          <h3 class="nav-title">LETTER TYPES</h3>
+          <div class="dynamic-tabs">
+            <a *ngFor="let tab of dynamicTabs" 
+               [routerLink]="['/generate', tab.name]" 
+               routerLinkActive="active" 
+               class="nav-item letter-tab"
+               [style.--tab-color]="tab.color"
+               (click)="setActivePage('generate')">
+              <span class="nav-icon">{{ tab.icon }}</span>
+              <span class="nav-text">{{ tab.displayName }}</span>
+              <span class="tab-badge" *ngIf="tab.dataSource === 'Database'">🗄️</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- MANAGEMENT SECTION -->
+        <div class="nav-section">
+          <h3 class="nav-title">MANAGEMENT</h3>
+          <a routerLink="/templates" routerLinkActive="active" class="nav-item" (click)="setActivePage('templates')">
+            <span class="nav-icon">📋</span>
+            <span class="nav-text">Templates</span>
+          </a>
+          <a routerLink="/signatures" routerLinkActive="active" class="nav-item" (click)="setActivePage('signatures')">
+            <span class="nav-icon">✍️</span>
+            <span class="nav-text">Signatures</span>
+          </a>
+          <a routerLink="/employees" routerLinkActive="active" class="nav-item" (click)="setActivePage('employees')">
+            <span class="nav-icon">👥</span>
+            <span class="nav-text">Employees</span>
+          </a>
+          <a routerLink="/proxkey" routerLinkActive="active" class="nav-item" (click)="setActivePage('proxkey')">
+            <span class="nav-icon">🔑</span>
+            <span class="nav-text">PROXKey</span>
+          </a>
+        </div>
+
+        <!-- ADMIN SECTION -->
+        <div class="nav-section" *ngIf="isAdmin">
+          <h3 class="nav-title">ADMIN</h3>
+          <a routerLink="/admin/tabs" routerLinkActive="active" class="nav-item" (click)="setActivePage('admin-tabs')">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">Manage Tabs</span>
+          </a>
+          <a routerLink="/admin/settings" routerLinkActive="active" class="nav-item" (click)="setActivePage('admin-settings')">
+            <span class="nav-icon">🔧</span>
+            <span class="nav-text">System Settings</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+
+  <!-- Global Loading Spinner -->
+  <div class="global-spinner" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading...</div>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div class="toast-container">
+    <div *ngFor="let toast of toasts" 
+         class="toast" 
+         [class]="toast.type"
+         [@slideInRight]>
+      <div class="toast-content">
+        <span class="toast-icon">{{ getToastIcon(toast.type) }}</span>
+        <span class="toast-message">{{ toast.message }}</span>
+      </div>
+      <button class="toast-close" (click)="removeToast(toast.id)">×</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,401 @@
+<div class="upload-container">
+  <!-- Header Section -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <span class="title-icon">📤</span>
+        File Upload Center
+      </h1>
+      <p class="page-subtitle">
+        Upload Excel files for employee data, letter templates, and digital signatures
+      </p>
+    </div>
+    <div class="header-actions">
+      <button class="template-btn" (click)="downloadTemplate()">
+        <span>📥</span>
+        Download Template
+      </button>
+      <button class="refresh-btn" (click)="refreshData()" [disabled]="isLoading">
+        <span>🔄</span>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Dynamic Tabs Section -->
+  <div class="dynamic-tabs-section" *ngIf="dynamicTabs.length > 0">
+    <div class="section-header">
+      <h3>Available Letter Types</h3>
+      <p>Select a letter type to upload data or templates</p>
+    </div>
+    
+    <div class="tabs-grid">
+      <div class="tab-card" 
+           *ngFor="let tab of dynamicTabs" 
+           [class.active]="selectedTab?.id === tab.id"
+           (click)="selectTab(tab)">
+        <div class="tab-icon" [style.background-color]="tab.color || '#3B82F6'">
+          <span class="icon-emoji">{{ getTabIcon(tab.icon) }}</span>
+        </div>
+        <div class="tab-content">
+          <h4>{{ tab.displayName }}</h4>
+          <p>{{ tab.description || 'No description available' }}</p>
+          <div class="tab-meta">
+            <span class="tab-chip" [class]="getDataSourceColor(tab.dataSource)">
+              {{ tab.dataSource }}
+            </span>
+            <span class="tab-status" [class]="tab.isActive ? 'active' : 'inactive'">
+              {{ tab.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+        </div>
+        <div class="tab-actions">
+          <button class="action-btn"
+                  (click)="uploadForTab(tab, $event)"
+                  [disabled]="!tab.isActive"
+                  title="Upload data for this letter type">
+            📤
+          </button>
+          <button class="action-btn"
+                  (click)="viewTabData(tab, $event)"
+                  [disabled]="!tab.isActive"
+                  title="View uploaded data">
+            👁️
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload Types -->
+  <div class="upload-types">
+    <div class="type-card" [class.active]="selectedType === 'excel'" (click)="selectType('excel')">
+      <div class="type-icon excel">
+        <span>📊</span>
+      </div>
+      <div class="type-content">
+        <h3>Excel Upload</h3>
+        <p>Upload employee data from Excel files (.xlsx, .xls)</p>
+        <div class="type-features">
+          <span class="feature">Bulk import</span>
+          <span class="feature">Data validation</span>
+          <span class="feature">Auto-mapping</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="type-card" [class.active]="selectedType === 'document'" (click)="selectType('document')">
+      <div class="type-icon document">
+        <span>📄</span>
+      </div>
+      <div class="type-content">
+        <h3>Document Upload</h3>
+        <p>Upload letter templates and supporting documents</p>
+        <div class="type-features">
+          <span class="feature">Multiple formats</span>
+          <span class="feature">Version control</span>
+          <span class="feature">Secure storage</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="type-card" [class.active]="selectedType === 'signature'" (click)="selectType('signature')">
+      <div class="type-icon signature">
+        <span>✍️</span>
+      </div>
+      <div class="type-content">
+        <h3>Signature Upload</h3>
+        <p>Upload digital signatures and authority stamps</p>
+        <div class="type-features">
+          <span class="feature">Image formats</span>
+          <span class="feature">Authority mapping</span>
+          <span class="feature">Secure storage</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload Form -->
+  <div class="upload-form" *ngIf="selectedType">
+    <div class="form-header">
+      <h3 class="form-title">{{ getUploadTitle() }}</h3>
+      <p class="form-description">{{ getUploadDescription() }}</p>
+      
+      <!-- Excel Upload with Tabs -->
+      <div class="form-tabs" *ngIf="selectedType === 'excel'">
+        <div class="tabs-container">
+          <div class="tab-header">
+            <div class="tab-item" 
+                 *ngFor="let tab of activeTabs; let i = index"
+                 [class.active]="selectedTab?.id === tab.id"
+                 (click)="selectTab(tab)">
+              {{ tab.displayName }}
+            </div>
+          </div>
+          
+          <div class="tab-content" *ngIf="selectedTab">
+            <p class="tab-description">
+              Uploading data for <strong>{{ selectedTab?.displayName }}</strong> 
+              ({{ selectedTab?.dataSource === 'Upload' ? 'New upload' : 'Database integration' }})
+            </p>
+            
+            <form [formGroup]="excelForm" (ngSubmit)="uploadExcel(selectedTab || undefined)">
+              <div class="form-grid">
+                <div class="form-field">
+                  <label>Department</label>
+                  <select formControlName="department" required>
+                    <option value="">Select Department</option>
+                    <option value="IT">Information Technology</option>
+                    <option value="HR">Human Resources</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Operations">Operations</option>
+                  </select>
+                </div>
+
+                <div class="form-field">
+                  <label>Location</label>
+                  <select formControlName="location" required>
+                    <option value="">Select Location</option>
+                    <option value="HQ">Headquarters</option>
+                    <option value="Branch1">Branch Office 1</option>
+                    <option value="Branch2">Branch Office 2</option>
+                  </select>
+                </div>
+
+                <div class="form-field full-width">
+                  <label>Notes</label>
+                  <textarea formControlName="notes" rows="3" 
+                            placeholder="Any additional information about this upload"></textarea>
+                </div>
+              </div>
+
+              <div class="file-upload-section">
+                <div class="file-drop-zone" 
+                     (click)="fileInput.click()"
+                     (dragover)="onDragOver($event)"
+                     (dragleave)="onDragLeave($event)"
+                     (drop)="onDrop($event)"
+                     [class.dragover]="isDragOver">
+                  <span class="upload-icon">☁️</span>
+                  <h4>Drop Excel file here or click to browse</h4>
+                  <p>Supports .xlsx, .xls files up to 10MB</p>
+                  <input #fileInput type="file" 
+                         accept=".xlsx,.xls" 
+                         (change)="onFileSelected($event)"
+                         style="display: none;">
+                </div>
+
+                <div class="file-preview" *ngIf="selectedFile">
+                  <div class="file-info">
+                    <span class="file-icon">📊</span>
+                    <div class="file-details">
+                      <div class="file-name">{{ selectedFile?.name }}</div>
+                      <div class="file-size">{{ formatFileSize(selectedFile?.size || 0) }}</div>
+                    </div>
+                    <button class="remove-btn" (click)="removeFile()">
+                      ❌
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="cancel-btn" (click)="resetForm()">
+                  Cancel
+                </button>
+                <button type="submit"
+                        [disabled]="!excelForm.valid || !selectedFile || isUploading"
+                        class="upload-btn">
+                  <span>📤</span>
+                  {{ isUploading ? 'Uploading...' : 'Upload Excel' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Document Upload Form -->
+    <div class="document-form" *ngIf="selectedType === 'document'">
+      <form [formGroup]="documentForm" (ngSubmit)="uploadDocument()">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Document Type</label>
+            <select formControlName="documentType" required>
+              <option value="">Select Type</option>
+              <option value="template">Letter Template</option>
+              <option value="supporting">Supporting Document</option>
+              <option value="policy">Policy Document</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label>Category</label>
+            <select formControlName="category" required>
+              <option value="">Select Category</option>
+              <option value="experience">Experience Letters</option>
+              <option value="transfer">Transfer Letters</option>
+              <option value="confirmation">Confirmation Letters</option>
+              <option value="termination">Termination Letters</option>
+            </select>
+          </div>
+
+          <div class="form-field full-width">
+            <label>Description</label>
+            <textarea formControlName="description" rows="3" 
+                      placeholder="Describe the document content and purpose"></textarea>
+          </div>
+        </div>
+
+        <div class="file-upload-section">
+          <div class="file-drop-zone" 
+               (click)="fileInput.click()"
+               (dragover)="onDragOver($event)"
+               (dragleave)="onDragLeave($event)"
+               (drop)="onDrop($event)"
+               [class.dragover]="isDragOver">
+            <span class="upload-icon">☁️</span>
+            <h4>Drop document here or click to browse</h4>
+            <p>Supports .docx, .pdf, .txt files up to 25MB</p>
+            <input #fileInput type="file" 
+                   accept=".docx,.pdf,.txt" 
+                   (change)="onFileSelected($event)"
+                   style="display: none;">
+          </div>
+
+          <div class="file-preview" *ngIf="selectedFile">
+            <div class="file-info">
+              <span class="file-icon">📄</span>
+              <div class="file-details">
+                <div class="file-name">{{ selectedFile?.name }}</div>
+                <div class="file-size">{{ formatFileSize(selectedFile?.size || 0) }}</div>
+              </div>
+              <button class="remove-btn" (click)="removeFile()">
+                ❌
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="cancel-btn" (click)="resetForm()">
+            Cancel
+          </button>
+          <button type="submit"
+                  [disabled]="!documentForm.valid || !selectedFile || isUploading"
+                  class="upload-btn">
+            <span>📤</span>
+            {{ isUploading ? 'Uploading...' : 'Upload Document' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Signature Upload Form -->
+    <div class="signature-form" *ngIf="selectedType === 'signature'">
+      <form [formGroup]="signatureForm" (ngSubmit)="uploadSignature()">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Authority Name</label>
+            <input type="text" formControlName="authorityName" 
+                   placeholder="Enter authority name" required>
+          </div>
+
+          <div class="form-field">
+            <label>Designation</label>
+            <input type="text" formControlName="designation" 
+                   placeholder="Enter designation" required>
+          </div>
+
+          <div class="form-field full-width">
+            <label>Notes</label>
+            <textarea formControlName="notes" rows="3" 
+                      placeholder="Additional information about this signature"></textarea>
+          </div>
+        </div>
+
+        <div class="file-upload-section">
+          <div class="file-drop-zone" 
+               (click)="fileInput.click()"
+               (dragover)="onDragOver($event)"
+               (dragleave)="onDragLeave($event)"
+               (drop)="onDrop($event)"
+               [class.dragover]="isDragOver">
+            <span class="upload-icon">☁️</span>
+            <h4>Drop signature image here or click to browse</h4>
+            <p>Supports .png, .jpg, .jpeg files up to 5MB</p>
+            <input #fileInput type="file" 
+                   accept=".png,.jpg,.jpeg" 
+                   (change)="onFileSelected($event)"
+                   style="display: none;">
+          </div>
+
+          <div class="file-preview" *ngIf="selectedFile">
+            <div class="file-info">
+              <span class="file-icon">✍️</span>
+              <div class="file-details">
+                <div class="file-name">{{ selectedFile?.name }}</div>
+                <div class="file-size">{{ formatFileSize(selectedFile?.size || 0) }}</div>
+              </div>
+              <button class="remove-btn" (click)="removeFile()">
+                ❌
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="cancel-btn" (click)="resetForm()">
+            Cancel
+          </button>
+          <button type="submit"
+                  [disabled]="!signatureForm.valid || !selectedFile || isUploading"
+                  class="upload-btn">
+            <span>📤</span>
+            {{ isUploading ? 'Uploading...' : 'Upload Signature' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Upload Progress -->
+  <div class="upload-progress" *ngIf="isUploading">
+    <div class="progress-header">
+      <h4>Uploading {{ selectedFile?.name }}</h4>
+      <span class="progress-percentage">{{ uploadProgress }}%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" [style.width.%]="uploadProgress"></div>
+    </div>
+    <p class="progress-status">{{ getProgressStatus() }}</p>
+  </div>
+
+  <!-- Recent Uploads -->
+  <div class="recent-uploads" *ngIf="recentUploads.length > 0">
+    <div class="section-header">
+      <h3>Recent Uploads</h3>
+      <button class="view-all-btn" (click)="loadUploadHistory()">View All</button>
+    </div>
+    
+    <div class="uploads-grid">
+      <div class="upload-item" *ngFor="let upload of recentUploads">
+        <div class="upload-icon" [class]="upload.fileType">
+          <span>{{ getUploadIcon(upload.fileType) }}</span>
+        </div>
+        <div class="upload-content">
+          <div class="upload-name">{{ upload.fileName }}</div>
+          <div class="upload-meta">
+            <span class="upload-type">{{ upload.fileType }}</span>
+            <span class="upload-date">{{ upload.createdAt | date:'short' }}</span>
+          </div>
+          <div class="upload-status" [class]="upload.status">
+            {{ upload.status }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,342 @@
+.template-editor {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .editor-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+
+    .mat-card-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 16px 16px 0 0;
+      margin: -16px -16px 20px -16px;
+      padding: 20px;
+
+      .mat-card-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 24px;
+        font-weight: 600;
+      }
+
+      .mat-card-subtitle {
+        color: rgba(255, 255, 255, 0.9);
+        margin-top: 8px;
+      }
+    }
+  }
+
+  .form-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    h3 {
+      color: #667eea;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+    }
+
+    .form-row {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+      align-items: flex-start;
+
+      &.full-width {
+        .mat-form-field {
+          flex: 1;
+        }
+      }
+
+      .half-width {
+        flex: 1;
+      }
+
+      .mat-form-field {
+        flex: 1;
+      }
+    }
+  }
+
+  .content-editor {
+    .editor-toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: rgba(102, 126, 234, 0.1);
+      border-radius: 8px;
+      border: 1px solid rgba(102, 126, 234, 0.2);
+
+      button {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: rgba(102, 126, 234, 0.2);
+          border-color: rgba(102, 126, 234, 0.5);
+          transform: translateY(-2px);
+        }
+
+        mat-icon {
+          color: #667eea;
+        }
+      }
+    }
+
+    .template-textarea {
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+  }
+
+  .fields-container {
+    .fields-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: rgba(76, 175, 80, 0.1);
+      border-radius: 8px;
+      border: 1px solid rgba(76, 175, 80, 0.2);
+
+      span {
+        color: #4caf50;
+        font-weight: 500;
+      }
+
+      button {
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: #45a049;
+          transform: scale(1.1);
+        }
+      }
+    }
+
+    .fields-list {
+      .field-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 15px;
+
+        .field-row {
+          display: flex;
+          gap: 15px;
+          margin-bottom: 15px;
+          align-items: center;
+
+          .field-name {
+            flex: 2;
+          }
+
+          .field-display {
+            flex: 2;
+          }
+
+          .field-type {
+            flex: 1;
+          }
+
+          .field-required {
+            flex: 0 0 auto;
+            margin-left: 10px;
+          }
+
+          .field-default {
+            flex: 1;
+          }
+
+          .field-help {
+            flex: 1;
+          }
+
+          .field-validation {
+            flex: 1;
+          }
+        }
+      }
+    }
+  }
+
+  .preview-container {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 20px;
+
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+      span {
+        color: #ff9800;
+        font-weight: 500;
+      }
+
+      button {
+        background: #ff9800;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: #f57c00;
+          transform: translateY(-1px);
+        }
+      }
+    }
+
+    .preview-content {
+      background: white;
+      color: #333;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      min-height: 200px;
+      line-height: 1.6;
+      font-family: 'Times New Roman', serif;
+      font-size: 14px;
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    button {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+
+      &.mat-button {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #666;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.2);
+          border-color: rgba(255, 255, 255, 0.3);
+        }
+      }
+
+      &.mat-raised-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        &:disabled {
+          background: #ccc;
+          transform: none;
+          box-shadow: none;
+        }
+      }
+
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+  }
+}
+
+// Dark theme adjustments
+:host-context(.dark-theme) {
+  .template-editor {
+    .editor-card {
+      background: rgba(30, 30, 30, 0.9);
+      border-color: rgba(255, 255, 255, 0.1);
+
+      .form-section {
+        background: rgba(255, 255, 255, 0.02);
+        border-color: rgba(255, 255, 255, 0.05);
+      }
+
+      .preview-content {
+        background: #2d2d2d;
+        color: #e0e0e0;
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .template-editor {
+    padding: 10px;
+
+    .form-row {
+      flex-direction: column;
+      gap: 15px;
+
+      .half-width {
+        width: 100%;
+      }
+    }
+
+    .fields-list .field-item .field-row {
+      flex-direction: column;
+      gap: 15px;
+
+      .field-name,
+      .field-display,
+      .field-type,
+      .field-default,
+      .field-help,
+      .field-validation {
+        width: 100%;
+      }
+    }
+
+    .form-actions {
+      flex-direction: column;
+      align-items: stretch;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}

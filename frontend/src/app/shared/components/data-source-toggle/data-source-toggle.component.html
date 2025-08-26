@@ -1,0 +1,202 @@
+<div class="data-source-toggle-container">
+  <!-- Component Header -->
+  <div class="toggle-header" *ngIf="config.showLabel">
+    <h4 class="toggle-title">{{ config.label || 'Data Source Configuration' }}</h4>
+    <p class="toggle-description" *ngIf="config.showDescription">
+      {{ config.description || 'Choose whether to use uploaded data or fetch from existing database' }}
+    </p>
+  </div>
+
+  <!-- Individual Toggle Switches -->
+  <div class="toggle-switches" *ngIf="!config.allowBulkToggle">
+    <div class="toggle-item" *ngFor="let source of dataSources">
+      <div class="toggle-content">
+        <div class="toggle-info">
+          <mat-icon class="toggle-icon">{{ source.icon }}</mat-icon>
+          <div class="toggle-details">
+            <span class="toggle-name">{{ source.name }}</span>
+            <span class="toggle-description">{{ source.description }}</span>
+          </div>
+        </div>
+        
+        <mat-slide-toggle 
+          [checked]="source.isActive" 
+          (change)="onSourceToggle(source, $event.checked)"
+          [disabled]="source.disabled"
+          class="toggle-switch">
+        </mat-slide-toggle>
+      </div>
+
+      <!-- Validation Messages -->
+      <div class="toggle-validation" *ngIf="config.showValidation && source.validationMessage">
+        <mat-icon class="validation-icon" [class]="source.validationType">
+          {{ source.validationType === 'error' ? 'error' : 'warning' }}
+        </mat-icon>
+        <span class="validation-message" [class]="source.validationType">
+          {{ source.validationMessage }}
+        </span>
+      </div>
+
+      <!-- Source Status -->
+      <div class="source-status" *ngIf="source.showStatus">
+        <mat-chip [color]="getStatusColor(source.status)" 
+                 [selected]="true"
+                 class="status-chip">
+          <mat-icon>{{ getStatusIcon(source.status) }}</mat-icon>
+          {{ source.status }}
+        </mat-chip>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Toggle Control -->
+  <div class="bulk-toggle" *ngIf="config.allowBulkToggle">
+    <div class="bulk-toggle-header">
+      <h5>Bulk Data Source Management</h5>
+      <p>Configure all data sources at once</p>
+    </div>
+
+    <div class="bulk-toggle-controls">
+      <button mat-stroked-button (click)="setAllToUpload()" class="bulk-btn upload-btn">
+        <mat-icon>cloud_upload</mat-icon>
+        Set All to Upload
+      </button>
+      
+      <button mat-stroked-button (click)="setAllToDatabase()" class="bulk-btn database-btn">
+        <mat-icon>storage</mat-icon>
+        Set All to Database
+      </button>
+      
+      <button mat-stroked-button (click)="toggleAll()" class="bulk-btn toggle-btn">
+        <mat-icon>swap_horiz</mat-icon>
+        Toggle All
+      </button>
+    </div>
+
+    <div class="bulk-toggle-summary">
+      <div class="summary-item">
+        <span class="summary-label">Upload Sources:</span>
+        <span class="summary-value upload-count">{{ getUploadSourceCount() }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Database Sources:</span>
+        <span class="summary-value database-count">{{ getDatabaseSourceCount() }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Total Sources:</span>
+        <span class="summary-value total-count">{{ dataSources.length }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compact View -->
+  <div class="compact-toggle" *ngIf="config.compact">
+    <div class="compact-toggles">
+      <div class="compact-toggle-item" *ngFor="let source of dataSources">
+        <mat-slide-toggle 
+          [checked]="source.isActive" 
+          (change)="onSourceToggle(source, $event.checked)"
+          [disabled]="source.disabled"
+          class="compact-switch">
+          {{ source.name }}
+        </mat-slide-toggle>
+      </div>
+    </div>
+  </div>
+
+  <!-- Configuration Options -->
+  <div class="toggle-config" *ngIf="config.showAdvancedOptions">
+    <mat-expansion-panel class="config-panel">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>settings</mat-icon>
+          Advanced Configuration
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <div class="config-content">
+        <div class="config-row">
+          <mat-form-field appearance="outline" class="config-field">
+            <mat-label>Database Connection String</mat-label>
+            <input matInput [(ngModel)]="databaseConnectionString" 
+                   placeholder="Server=localhost;Database=DocHub;Trusted_Connection=true;">
+            <mat-hint>Configure database connection for data sources</mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div class="config-row">
+          <mat-form-field appearance="outline" class="config-field">
+            <mat-label>Upload Directory</mat-label>
+            <input matInput [(ngModel)]="uploadDirectory" 
+                   placeholder="/uploads">
+            <mat-hint>Directory for storing uploaded files</mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div class="config-row">
+          <mat-slide-toggle [(ngModel)]="autoSync" class="config-toggle">
+            Auto-sync between upload and database
+          </mat-slide-toggle>
+          
+          <mat-slide-toggle [(ngModel)]="validateData" class="config-toggle">
+            Validate data before switching sources
+          </mat-slide-toggle>
+        </div>
+
+        <div class="config-actions">
+          <button mat-stroked-button (click)="testConnections()" class="config-btn">
+            <mat-icon>build</mat-icon>
+            Test Connections
+          </button>
+          
+          <button mat-raised-button color="primary" (click)="saveConfiguration()" class="config-btn">
+            <mat-icon>save</mat-icon>
+            Save Configuration
+          </button>
+        </div>
+      </div>
+    </mat-expansion-panel>
+  </div>
+
+  <!-- Help Section -->
+  <div class="toggle-help" *ngIf="config.showHelp">
+    <mat-expansion-panel class="help-panel">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>help</mat-icon>
+          Help & Information
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <div class="help-content">
+        <div class="help-section">
+          <h6>Upload Data Sources</h6>
+          <p>When enabled, the system will use data from uploaded Excel files and other documents. 
+             This is useful for processing new data or when you want to override existing database records.</p>
+        </div>
+
+        <div class="help-section">
+          <h6>Database Data Sources</h6>
+          <p>When enabled, the system will fetch data from your existing database. 
+             This is useful for maintaining consistency with your current data infrastructure.</p>
+        </div>
+
+        <div class="help-section">
+          <h6>Switching Between Sources</h6>
+          <p>You can switch between data sources at any time. The system will automatically 
+             handle the transition and ensure data consistency.</p>
+        </div>
+
+        <div class="help-section">
+          <h6>Best Practices</h6>
+          <ul>
+            <li>Use upload sources for new data or temporary processing</li>
+            <li>Use database sources for production and persistent data</li>
+            <li>Validate data before switching sources</li>
+            <li>Backup your data before making significant changes</li>
+          </ul>
+        </div>
+      </div>
+    </mat-expansion-panel>
+  </div>
+</div>

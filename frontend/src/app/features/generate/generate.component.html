@@ -1,0 +1,235 @@
+<div class="generate-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <mat-icon class="title-icon">create</mat-icon>
+        Generate Letters
+      </h1>
+      <p class="page-subtitle">
+        Create and send letters to employees with digital signatures
+      </p>
+    </div>
+  </div>
+
+  <!-- Stepper -->
+  <mat-stepper #stepper class="letter-stepper" [linear]="true">
+    
+    <!-- Step 1: Letter Configuration -->
+    <mat-step [stepControl]="letterForm" label="Letter Configuration">
+      <form [formGroup]="letterForm" class="step-form">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Letter Type</mat-label>
+            <mat-select formControlName="letterType" (selectionChange)="onLetterTypeChange()">
+              <mat-option value="transfer-letter">Transfer Letter</mat-option>
+              <mat-option value="experience-letter">Experience Letter</mat-option>
+              <mat-option value="confirmation-letter">Confirmation Letter</mat-option>
+              <mat-option value="mutual-cessation-letter">Mutual Cessation Letter</mat-option>
+            </mat-select>
+            <mat-error *ngIf="letterForm.get('letterType')?.hasError('required')">
+              Letter type is required
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Template</mat-label>
+            <mat-select formControlName="template">
+              <mat-option *ngFor="let template of letterTemplates" [value]="template.id">
+                {{ template.name }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="letterForm.get('template')?.hasError('required')">
+              Template is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-actions">
+          <button mat-raised-button color="primary" (click)="nextStep()" 
+                  [disabled]="!canProceedToNextStep()">
+            Next
+            <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+      </form>
+    </mat-step>
+
+    <!-- Step 2: Employee Selection -->
+    <mat-step label="Employee Selection">
+      <div class="step-content">
+        <div class="employee-selection-header">
+          <h3>Select Employees</h3>
+          <p>{{ selectedEmployees.length }} employee(s) selected</p>
+        </div>
+
+        <div class="employee-list">
+          <div class="employee-item" *ngFor="let employee of employees">
+            <mat-checkbox 
+              [checked]="isEmployeeSelected(employee.id)"
+              (change)="toggleEmployeeSelection(employee.id)">
+              <div class="employee-info">
+                <div class="employee-name">{{ employee.name }}</div>
+                <div class="employee-details">
+                  {{ employee.department }} • {{ employee.designation }}
+                </div>
+              </div>
+            </mat-checkbox>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button mat-stroked-button (click)="previousStep()">
+            <mat-icon>arrow_back</mat-icon>
+            Back
+          </button>
+          <button mat-raised-button color="primary" (click)="nextStep()" 
+                  [disabled]="!canProceedToNextStep()">
+            Next
+            <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-step>
+
+    <!-- Step 3: Signature Configuration -->
+    <mat-step label="Signature Configuration">
+      <div class="step-content">
+        <form [formGroup]="signatureForm" class="signature-form">
+          <div class="signature-options">
+            <mat-radio-group formControlName="useStoredSignature" (change)="onSignatureTypeChange()">
+              <mat-radio-button value="true" class="signature-option">
+                <div class="option-content">
+                  <mat-icon>save</mat-icon>
+                  <div class="option-text">
+                    <div class="option-title">Use Stored Signature</div>
+                    <div class="option-description">Use the latest signature from storage</div>
+                  </div>
+                </div>
+              </mat-radio-button>
+              
+              <mat-radio-button value="false" class="signature-option">
+                <div class="option-content">
+                  <mat-icon>usb</mat-icon>
+                  <div class="option-text">
+                    <div class="option-title">Generate New Signature</div>
+                    <div class="option-description">Use PROXKey device to generate new signature</div>
+                  </div>
+                </div>
+              </mat-radio-button>
+            </mat-radio-group>
+          </div>
+
+          <div class="stored-signatures" *ngIf="signatureForm.get('useStoredSignature')?.value">
+            <h4>Available Signatures</h4>
+            <div class="signature-list">
+              <div class="signature-item" *ngFor="let signature of digitalSignatures">
+                <mat-radio-button [value]="signature.id" name="signature">
+                  <div class="signature-info">
+                    <div class="signature-name">{{ signature.authorityName }}</div>
+                    <div class="signature-designation">{{ signature.authorityDesignation }}</div>
+                  </div>
+                </mat-radio-button>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <div class="form-actions">
+          <button mat-stroked-button (click)="previousStep()">
+            <mat-icon>arrow_back</mat-icon>
+            Back
+          </button>
+          <button mat-raised-button color="primary" (click)="nextStep()" 
+                  [disabled]="!canProceedToNextStep()">
+            Next
+            <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-step>
+
+    <!-- Step 4: Review and Generate -->
+    <mat-step label="Review and Generate">
+      <div class="step-content">
+        <div class="review-section">
+          <h3>Review Configuration</h3>
+          
+          <div class="review-item">
+            <span class="review-label">Letter Type:</span>
+            <span class="review-value">{{ selectedLetterType }}</span>
+          </div>
+          
+          <div class="review-item">
+            <span class="review-label">Template:</span>
+            <span class="review-value">{{ selectedTemplate?.name || 'Not selected' }}</span>
+          </div>
+          
+          <div class="review-item">
+            <span class="review-label">Employees:</span>
+            <span class="review-value">{{ selectedEmployees.length }} selected</span>
+          </div>
+          
+          <div class="review-item">
+            <span class="review-label">Signature:</span>
+            <span class="review-value">
+              {{ signatureForm.get('useStoredSignature')?.value ? 'Stored signature' : 'New signature' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button mat-stroked-button (click)="previousStep()">
+            <mat-icon>arrow_back</mat-icon>
+            Back
+          </button>
+          <button mat-raised-button color="primary" (click)="generateLetters()" 
+                  [disabled]="isLoading">
+            <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
+            <span *ngIf="!isLoading">Generate Letters</span>
+          </button>
+        </div>
+      </div>
+    </mat-step>
+  </mat-stepper>
+
+  <!-- Generated Letters Summary -->
+  <div class="generated-summary" *ngIf="generatedLetters.length > 0">
+    <mat-card class="summary-card">
+      <mat-card-header>
+        <mat-card-title>Generated Letters</mat-card-title>
+        <mat-card-subtitle>{{ generatedLetters.length }} letter(s) created successfully</mat-card-subtitle>
+      </mat-card-header>
+      
+      <mat-card-content>
+        <div class="letters-list">
+          <div class="letter-item" *ngFor="let letter of generatedLetters">
+            <div class="letter-info">
+              <div class="letter-number">{{ letter.letterNumber }}</div>
+              <div class="letter-details">
+                <div class="employee-name">{{ letter.employeeName }}</div>
+                <div class="letter-type">{{ letter.letterType }}</div>
+              </div>
+            </div>
+            <div class="letter-status">
+              <mat-chip color="primary" selected>{{ letter.status }}</mat-chip>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+      
+      <mat-card-actions>
+        <button mat-raised-button color="accent" (click)="sendLetters()">
+          <mat-icon>send</mat-icon>
+          Send All Letters
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Generating letters...</p>
+  </div>
+</div>

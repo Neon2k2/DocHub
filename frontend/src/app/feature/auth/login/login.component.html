@@ -1,0 +1,60 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h1 class="login-title">Welcome to DocHub</h1>
+      <p class="login-subtitle">Sign in to your account</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="error-message">
+        <mat-icon>error</mat-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- Username Field -->
+      <div class="form-field">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Username</mat-label>
+          <input matInput formControlName="username" placeholder="Enter your username">
+          <mat-icon matPrefix>person</mat-icon>
+          <mat-error *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched">
+            {{ getErrorMessage('username') }}
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-field">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Password</mat-label>
+          <input matInput type="password" formControlName="password" placeholder="Enter your password">
+          <mat-icon matPrefix>lock</mat-icon>
+          <mat-error *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+            {{ getErrorMessage('password') }}
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <!-- Submit Button -->
+      <button mat-raised-button color="primary" type="submit" class="login-button" [disabled]="isLoading">
+        <span *ngIf="!isLoading">Sign In</span>
+        <span *ngIf="isLoading" class="loading">
+          <mat-spinner diameter="20"></mat-spinner>
+          Signing In...
+        </span>
+      </button>
+    </form>
+
+    <!-- Demo Credentials -->
+    <div class="demo-credentials">
+      <h3>Demo Credentials:</h3>
+      <div class="credential">
+        <strong>Admin:</strong> admin / admin123
+      </div>
+      <div class="credential">
+        <strong>HR:</strong> hr / admin123
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,408 @@
+<div class="settings-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="header-content">
+      <h1 class="page-title">
+        <mat-icon class="title-icon">settings</mat-icon>
+        Application Settings
+      </h1>
+      <p class="page-description">
+        Configure application preferences, email settings, and system configurations
+      </p>
+    </div>
+    <div class="header-actions">
+      <button mat-raised-button color="primary" (click)="saveSettings()" class="action-button">
+        <mat-icon>save</mat-icon>
+        Save Settings
+      </button>
+      <button mat-stroked-button (click)="resetToDefaults()" class="action-button">
+        <mat-icon>restore</mat-icon>
+        Reset to Defaults
+      </button>
+    </div>
+  </div>
+
+  <!-- Settings Form -->
+  <form [formGroup]="settingsForm" (ngSubmit)="saveSettings()" class="settings-form">
+    <!-- General Settings -->
+    <mat-expansion-panel class="settings-panel" expanded="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>tune</mat-icon>
+          General Settings
+        </mat-panel-title>
+        <mat-panel-description>
+          Basic application configuration
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+      <div class="settings-section">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Application Name</mat-label>
+            <input matInput formControlName="appName" placeholder="DocHub">
+            <mat-error *ngIf="settingsForm.get('appName')?.hasError('required')">
+              Application name is required
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Company Name</mat-label>
+            <input matInput formControlName="companyName" placeholder="Your Company">
+            <mat-error *ngIf="settingsForm.get('companyName')?.hasError('required')">
+              Company name is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Default Language</mat-label>
+            <mat-select formControlName="defaultLanguage">
+              <mat-option value="en">English</mat-option>
+              <mat-option value="es">Spanish</mat-option>
+              <mat-option value="fr">French</mat-option>
+              <mat-option value="de">German</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Time Zone</mat-label>
+            <mat-select formControlName="timezone">
+              <mat-option value="UTC">UTC</mat-option>
+              <mat-option value="EST">Eastern Time</mat-option>
+              <mat-option value="CST">Central Time</mat-option>
+              <mat-option value="MST">Mountain Time</mat-option>
+              <mat-option value="PST">Pacific Time</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-slide-toggle formControlName="autoSave" class="toggle-field">
+            Auto-save changes
+          </mat-slide-toggle>
+
+          <mat-slide-toggle formControlName="notifications" class="toggle-field">
+            Enable notifications
+          </mat-slide-toggle>
+        </div>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- Email Settings -->
+    <mat-expansion-panel class="settings-panel">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>email</mat-icon>
+          Email Configuration
+        </mat-panel-title>
+        <mat-panel-description>
+          SendGrid email service settings
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+      <div class="settings-section">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>SendGrid API Key</mat-label>
+            <input matInput formControlName="sendGridApiKey" placeholder="SG.xxxxxxxxxxxxx" type="password">
+            <mat-error *ngIf="settingsForm.get('sendGridApiKey')?.hasError('required')">
+              SendGrid API key is required
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>From Email Address</mat-label>
+            <input matInput formControlName="fromEmail" placeholder="noreply@company.com" type="email">
+            <mat-error *ngIf="settingsForm.get('fromEmail')?.hasError('required')">
+              From email is required
+            </mat-error>
+            <mat-error *ngIf="settingsForm.get('fromEmail')?.hasError('email')">
+              Please enter a valid email address
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>From Name</mat-label>
+            <input matInput formControlName="fromName" placeholder="DocHub System">
+            <mat-error *ngIf="settingsForm.get('fromName')?.hasError('required')">
+              From name is required
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Reply To Email</mat-label>
+            <input matInput formControlName="replyToEmail" placeholder="support@company.com" type="email">
+            <mat-error *ngIf="settingsForm.get('replyToEmail')?.hasError('email')">
+              Please enter a valid email address
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>SMTP Host (Optional)</mat-label>
+            <input matInput formControlName="smtpHost" placeholder="smtp.sendgrid.net">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>SMTP Port</mat-label>
+            <input matInput formControlName="smtpPort" placeholder="587" type="number">
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-slide-toggle formControlName="enableEmailNotifications" class="toggle-field">
+            Enable email notifications
+          </mat-slide-toggle>
+
+          <button mat-stroked-button type="button" (click)="testEmailSettings()" class="test-button">
+            <mat-icon>send</mat-icon>
+            Test Email Settings
+          </button>
+        </div>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- Document Settings -->
+    <mat-expansion-panel class="settings-panel">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>description</mat-icon>
+          Document Settings
+        </mat-panel-title>
+        <mat-panel-description>
+          Document generation and storage preferences
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+      <div class="settings-section">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Default Document Format</mat-label>
+            <mat-select formControlName="defaultDocumentFormat">
+              <mat-option value="pdf">PDF</mat-option>
+              <mat-option value="docx">DOCX</mat-option>
+              <mat-option value="html">HTML</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Document Storage Path</mat-label>
+            <input matInput formControlName="documentStoragePath" placeholder="/documents">
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Maximum File Size (MB)</mat-label>
+            <input matInput formControlName="maxFileSize" placeholder="10" type="number">
+            <mat-error *ngIf="settingsForm.get('maxFileSize')?.hasError('min')">
+              File size must be at least 1 MB
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Document Retention Days</mat-label>
+            <input matInput formControlName="documentRetentionDays" placeholder="365" type="number">
+            <mat-error *ngIf="settingsForm.get('documentRetentionDays')?.hasError('min')">
+              Retention must be at least 30 days
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-slide-toggle formControlName="enableDocumentVersioning" class="toggle-field">
+            Enable document versioning
+          </mat-slide-toggle>
+
+          <mat-slide-toggle formControlName="autoBackupDocuments" class="toggle-field">
+            Auto-backup documents
+          </mat-slide-toggle>
+        </div>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- Security Settings -->
+    <mat-expansion-panel class="settings-panel">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>security</mat-icon>
+          Security Settings
+        </mat-panel-title>
+        <mat-panel-description>
+          Authentication and security preferences
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+      <div class="settings-section">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Session Timeout (minutes)</mat-label>
+            <input matInput formControlName="sessionTimeout" placeholder="30" type="number">
+            <mat-error *ngIf="settingsForm.get('sessionTimeout')?.hasError('min')">
+              Session timeout must be at least 5 minutes
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Password Minimum Length</mat-label>
+            <input matInput formControlName="passwordMinLength" placeholder="8" type="number">
+            <mat-error *ngIf="settingsForm.get('passwordMinLength')?.hasError('min')">
+              Password length must be at least 6 characters
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-slide-toggle formControlName="requireStrongPasswords" class="toggle-field">
+            Require strong passwords
+          </mat-slide-toggle>
+
+          <mat-slide-toggle formControlName="enableTwoFactorAuth" class="toggle-field">
+            Enable two-factor authentication
+          </mat-slide-toggle>
+        </div>
+
+        <div class="form-row">
+          <mat-slide-toggle formControlName="enableAuditLogging" class="toggle-field">
+            Enable audit logging
+          </mat-slide-toggle>
+
+          <mat-slide-toggle formControlName="encryptSensitiveData" class="toggle-field">
+            Encrypt sensitive data
+          </mat-slide-toggle>
+        </div>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- Integration Settings -->
+    <mat-expansion-panel class="settings-panel">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>integration_instructions</mat-icon>
+          Integration Settings
+        </mat-panel-title>
+        <mat-panel-description>
+          Third-party service configurations
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+      <div class="settings-section">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>PROXKey Endpoint</mat-label>
+            <input matInput formControlName="proxKeyEndpoint" placeholder="http://localhost:8080">
+            <mat-error *ngIf="settingsForm.get('proxKeyEndpoint')?.hasError('required')">
+              PROXKey endpoint is required
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Syncfusion License Key</mat-label>
+            <input matInput formControlName="syncfusionLicenseKey" placeholder="Mgo+DSMBaFt+QHJqVk1hXk5Pd0BLXHxAd1R/VWJYdVt5flBPcDwsT3RfQF5jS35Vd0RrXnlzclA=">
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Database Connection String</mat-label>
+            <input matInput formControlName="databaseConnectionString" placeholder="Server=localhost;Database=DocHub;Trusted_Connection=true;">
+            <mat-error *ngIf="settingsForm.get('databaseConnectionString')?.hasError('required')">
+              Database connection string is required
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Redis Connection String</mat-label>
+            <input matInput formControlName="redisConnectionString" placeholder="localhost:6379">
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <button mat-stroked-button type="button" (click)="testProXKeyConnection()" class="test-button">
+            <mat-icon>usb</mat-icon>
+            Test PROXKey Connection
+          </button>
+
+          <mat-slide-toggle formControlName="enableRealTimeUpdates" class="toggle-field">
+            Enable real-time updates
+          </mat-slide-toggle>
+        </div>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- Import/Export Settings -->
+    <mat-expansion-panel class="settings-panel">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>import_export</mat-icon>
+          Import/Export Settings
+        </mat-panel-title>
+        <mat-panel-description>
+          Backup and restore configuration
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+      <div class="settings-section">
+        <div class="form-row">
+          <button mat-stroked-button type="button" (click)="exportSettings()" class="action-button">
+            <mat-icon>file_download</mat-icon>
+            Export Settings
+          </button>
+
+          <button mat-stroked-button type="button" (click)="importSettings()" class="action-button">
+            <mat-icon>file_upload</mat-icon>
+            Import Settings
+          </button>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Auto-backup Settings</mat-label>
+            <mat-select formControlName="autoBackupSettings">
+              <mat-option value="daily">Daily</mat-option>
+              <mat-option value="weekly">Weekly</mat-option>
+              <mat-option value="monthly">Monthly</mat-option>
+              <mat-option value="never">Never</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Backup Retention (days)</mat-label>
+            <input matInput formControlName="backupRetentionDays" placeholder="30" type="number">
+          </mat-form-field>
+        </div>
+
+        <input type="file" #fileInput (change)="onFileSelected($event)" accept=".json" style="display: none;">
+      </div>
+    </mat-expansion-panel>
+  </form>
+
+  <!-- Save Actions -->
+  <div class="save-actions">
+    <mat-card class="save-actions-card">
+      <mat-card-content>
+        <div class="save-actions-content">
+          <div class="save-info">
+            <h3>Save Your Changes</h3>
+            <p>Click the save button to apply all your configuration changes. Some changes may require a restart to take effect.</p>
+          </div>
+          <div class="save-buttons">
+            <button mat-stroked-button (click)="resetToDefaults()" class="reset-btn">
+              <mat-icon>restore</mat-icon>
+              Reset to Defaults
+            </button>
+            <button mat-raised-button color="primary" (click)="saveSettings()" class="save-btn">
+              <mat-icon>save</mat-icon>
+              Save All Settings
+            </button>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

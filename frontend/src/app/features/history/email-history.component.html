@@ -1,0 +1,449 @@
+<div class="email-history-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="header-content">
+      <h1 class="page-title">
+        <mat-icon class="title-icon">email</mat-icon>
+        Email History
+      </h1>
+      <p class="page-description">
+        Track and manage all email communications with employees and consultants
+      </p>
+    </div>
+    <div class="header-actions">
+      <button mat-raised-button color="primary" (click)="refreshHistory()" class="action-button">
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+      <button mat-stroked-button (click)="exportHistory()" class="action-button">
+        <mat-icon>download</mat-icon>
+        Export
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <mat-card class="filters-card">
+      <mat-card-content>
+        <div class="filters-grid">
+          <!-- Status Filter -->
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Status</mat-label>
+            <mat-select [(ngModel)]="selectedStatus" (selectionChange)="applyFilters()">
+              <mat-option value="">All Statuses</mat-option>
+              <mat-option value="Sent">Sent</mat-option>
+              <mat-option value="Delivered">Delivered</mat-option>
+              <mat-option value="Failed">Failed</mat-option>
+              <mat-option value="Bounced">Bounced</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Date Range Filter -->
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Date Range</mat-label>
+            <mat-date-range-input [formGroup]="dateRange" [rangePicker]="picker">
+              <input matStartDate formControlName="start" placeholder="Start date">
+              <input matEndDate formControlName="end" placeholder="End date">
+            </mat-date-range-input>
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-date-range-picker #picker></mat-date-range-picker>
+          </mat-form-field>
+
+          <!-- Employee Filter -->
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Employee</mat-label>
+            <input matInput [(ngModel)]="selectedEmployee" placeholder="Search employee..." 
+                   (input)="searchEmployees($event)">
+            <mat-icon matSuffix>search</mat-icon>
+          </mat-form-field>
+
+          <!-- Letter Type Filter -->
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Letter Type</mat-label>
+            <mat-select [(ngModel)]="selectedLetterType" (selectionChange)="applyFilters()">
+              <mat-option value="">All Types</mat-option>
+              <mat-option *ngFor="let type of letterTypes" [value]="type">
+                {{ type }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Search Filter -->
+          <mat-form-field appearance="outline" class="filter-field search-field">
+            <mat-label>Search</mat-label>
+            <input matInput [(ngModel)]="searchTerm" placeholder="Search emails..." 
+                   (input)="applyFilters()">
+            <mat-icon matSuffix>search</mat-icon>
+          </mat-form-field>
+
+          <!-- Clear Filters -->
+          <button mat-stroked-button (click)="clearFilters()" class="clear-filters-btn">
+            <mat-icon>clear_all</mat-icon>
+            Clear Filters
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Statistics Section -->
+  <div class="stats-section">
+    <div class="stats-grid">
+      <mat-card class="stat-card total-emails">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon class="stat-icon">email</mat-icon>
+            <div class="stat-details">
+              <span class="stat-value">{{ emailStats.totalEmails }}</span>
+              <span class="stat-label">Total Emails</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card sent-emails">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon class="stat-icon">send</mat-icon>
+            <div class="stat-details">
+              <span class="stat-value">{{ emailStats.sentEmails }}</span>
+              <span class="stat-label">Sent</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card delivered-emails">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon class="stat-icon">check_circle</mat-icon>
+            <div class="stat-details">
+              <span class="stat-value">{{ emailStats.deliveredEmails }}</span>
+              <span class="stat-label">Delivered</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card failed-emails">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon class="stat-icon">error</mat-icon>
+            <div class="stat-details">
+              <span class="stat-value">{{ emailStats.failedEmails }}</span>
+              <span class="stat-label">Failed</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card success-rate">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon class="stat-icon">trending_up</mat-icon>
+            <div class="stat-details">
+              <span class="stat-value">{{ emailStats.successRate }}%</span>
+              <span class="stat-label">Success Rate</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- Email History Table -->
+  <div class="table-section">
+    <mat-card class="table-card">
+      <mat-card-header>
+        <mat-card-title>Email History</mat-card-title>
+        <mat-card-subtitle>
+          Showing {{ paginatedEmails.length }} of {{ totalEmails }} emails
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="table-container">
+          <table mat-table [dataSource]="paginatedEmails" class="email-table">
+            <!-- Status Column -->
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let email">
+                <div class="status-cell">
+                  <mat-icon [class]="getStatusIconClass(email.status)">
+                    {{ getStatusIcon(email.status) }}
+                  </mat-icon>
+                  <span class="status-text" [class]="getStatusClass(email.status)">
+                    {{ email.status }}
+                  </span>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Employee Column -->
+            <ng-container matColumnDef="employee">
+              <th mat-header-cell *matHeaderCellDef>Employee</th>
+              <td mat-cell *matCellDef="let email">
+                <div class="employee-cell">
+                  <mat-icon class="employee-icon">person</mat-icon>
+                  <div class="employee-details">
+                    <span class="employee-name">{{ email.employeeName || 'N/A' }}</span>
+                    <span class="employee-email">{{ email.toEmail }}</span>
+                  </div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Subject Column -->
+            <ng-container matColumnDef="subject">
+              <th mat-header-cell *matHeaderCellDef>Subject</th>
+              <td mat-cell *matCellDef="let email">
+                <div class="subject-cell">
+                  <span class="subject-text">{{ email.subject }}</span>
+                  <span class="letter-type" *ngIf="email.letterType">
+                    {{ email.letterType }}
+                  </span>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Sent Date Column -->
+            <ng-container matColumnDef="sentDate">
+              <th mat-header-cell *matHeaderCellDef>Sent Date</th>
+              <td mat-cell *matCellDef="let email">
+                <div class="date-cell">
+                  <span class="date-text">{{ email.sentAt | date:'short' }}</span>
+                  <span class="time-text">{{ email.sentAt | date:'HH:mm' }}</span>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Attachments Column -->
+            <ng-container matColumnDef="attachments">
+              <th mat-header-cell *matHeaderCellDef>Attachments</th>
+              <td mat-cell *matCellDef="let email">
+                <div class="attachments-cell">
+                  <span class="attachment-count" *ngIf="email.attachments?.length">
+                    {{ email.attachments.length }} file(s)
+                  </span>
+                  <span class="no-attachments" *ngIf="!email.attachments?.length">
+                    No attachments
+                  </span>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let email">
+                <div class="actions-cell">
+                  <button mat-icon-button [matMenuTriggerFor]="actionMenu" 
+                          [matTooltip]="'More actions'">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #actionMenu="matMenu">
+                    <button mat-menu-item (click)="viewEmailDetails(email)">
+                      <mat-icon>visibility</mat-icon>
+                      <span>View Details</span>
+                    </button>
+                    <button mat-menu-item (click)="resendEmail(email)" 
+                            [disabled]="email.status === 'Failed'">
+                      <mat-icon>send</mat-icon>
+                      <span>Resend</span>
+                    </button>
+                    <button mat-menu-item (click)="retryFailedEmail(email)" 
+                            *ngIf="email.status === 'Failed'">
+                      <mat-icon>refresh</mat-icon>
+                      <span>Retry</span>
+                    </button>
+                    <button mat-menu-item (click)="downloadAttachments(email)" 
+                            [disabled]="!email.attachments?.length">
+                      <mat-icon>download</mat-icon>
+                      <span>Download Attachments</span>
+                    </button>
+                    <mat-divider></mat-divider>
+                    <button mat-menu-item (click)="copyEmailId(email)">
+                      <mat-icon>content_copy</mat-icon>
+                      <span>Copy Email ID</span>
+                    </button>
+                  </mat-menu>
+                </div>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+                [class.selected-row]="selectedEmails.includes(row.id)"
+                (click)="toggleRowSelection(row.id)"></tr>
+          </table>
+
+          <!-- Pagination -->
+          <mat-paginator [length]="totalEmails"
+                         [pageSize]="pageSize"
+                         [pageSizeOptions]="[10, 25, 50, 100]"
+                         (page)="onPageChange($event)"
+                         class="email-paginator">
+          </mat-paginator>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Bulk Actions -->
+  <div class="bulk-actions-section" *ngIf="selectedEmails.length > 0">
+    <mat-card class="bulk-actions-card">
+      <mat-card-content>
+        <div class="bulk-actions-content">
+          <span class="selected-count">
+            {{ selectedEmails.length }} email(s) selected
+          </span>
+          <div class="bulk-actions-buttons">
+            <button mat-stroked-button (click)="bulkResend()" class="bulk-action-btn">
+              <mat-icon>send</mat-icon>
+              Resend Selected
+            </button>
+            <button mat-stroked-button (click)="bulkRetry()" class="bulk-action-btn">
+              <mat-icon>refresh</mat-icon>
+              Retry Failed
+            </button>
+            <button mat-stroked-button (click)="bulkExport()" class="bulk-action-btn">
+              <mat-icon>download</mat-icon>
+              Export Selected
+            </button>
+            <button mat-stroked-button (click)="clearSelection()" class="bulk-action-btn">
+              <mat-icon>clear</mat-icon>
+              Clear Selection
+            </button>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>
+
+<!-- Email Details Dialog -->
+<ng-template #emailDetailsDialog>
+  <div class="email-details-dialog">
+    <h2 mat-dialog-title>Email Details</h2>
+    <mat-dialog-content>
+      <div class="email-details-content" *ngIf="selectedEmail">
+        <div class="detail-row">
+          <span class="detail-label">Status:</span>
+          <span class="detail-value" [class]="getStatusClass(selectedEmail.status)">
+            {{ selectedEmail.status }}
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Subject:</span>
+          <span class="detail-value">{{ selectedEmail.subject }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">To:</span>
+          <span class="detail-value">{{ selectedEmail.toEmail }}</span>
+        </div>
+        <div class="detail-row" *ngIf="selectedEmail.ccEmail">
+          <span class="detail-label">CC:</span>
+          <span class="detail-value">{{ selectedEmail.ccEmail }}</span>
+        </div>
+        <div class="detail-row" *ngIf="selectedEmail.bccEmail">
+          <span class="detail-label">BCC:</span>
+          <span class="detail-value">{{ selectedEmail.bccEmail }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Sent:</span>
+          <span class="detail-value">{{ selectedEmail.sentAt | date:'full' }}</span>
+        </div>
+        <div class="detail-row" *ngIf="selectedEmail.deliveredAt">
+          <span class="detail-label">Delivered:</span>
+          <span class="detail-value">{{ selectedEmail.deliveredAt | date:'full' }}</span>
+        </div>
+        <div class="detail-row" *ngIf="selectedEmail.failedAt">
+          <span class="detail-label">Failed:</span>
+          <span class="detail-value">{{ selectedEmail.failedAt | date:'full' }}</span>
+        </div>
+        <div class="detail-row" *ngIf="selectedEmail.errorMessage">
+          <span class="detail-label">Error:</span>
+          <span class="detail-value error-message">{{ selectedEmail.errorMessage }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Retry Count:</span>
+          <span class="detail-value">{{ selectedEmail.retryCount }}</span>
+        </div>
+        <div class="detail-row" *ngIf="selectedEmail.attachments?.length">
+          <span class="detail-label">Attachments:</span>
+          <div class="attachments-list">
+            <div class="attachment-item" *ngFor="let attachment of selectedEmail.attachments">
+              <mat-icon>attachment</mat-icon>
+              <span class="attachment-name">{{ attachment.fileName }}</span>
+              <span class="attachment-size">({{ formatFileSize(attachment.fileSize) }})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Close</button>
+      <button mat-raised-button color="primary" (click)="resendEmail(selectedEmail)">
+        <mat-icon>send</mat-icon>
+        Resend
+      </button>
+    </mat-dialog-actions>
+  </div>
+</ng-template>
+
+<!-- Resend Email Dialog -->
+<ng-template #resendEmailDialog>
+  <div class="resend-email-dialog">
+    <h2 mat-dialog-title>Resend Email</h2>
+    <mat-dialog-content>
+      <form [formGroup]="resendForm" class="resend-form">
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Subject</mat-label>
+          <input matInput formControlName="subject" placeholder="Email subject">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Body</mat-label>
+          <textarea matInput formControlName="body" rows="4" placeholder="Email body"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>CC</mat-label>
+          <input matInput formControlName="ccEmail" placeholder="CC email addresses">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>BCC</mat-label>
+          <input matInput formControlName="bccEmail" placeholder="BCC email addresses">
+        </mat-form-field>
+
+        <mat-checkbox formControlName="useLatestSignature" class="signature-checkbox">
+          Use latest signature
+        </mat-checkbox>
+
+        <div class="additional-attachments" *ngIf="additionalAttachments.length > 0">
+          <h4>Additional Attachments</h4>
+          <div class="attachment-item" *ngFor="let attachment of additionalAttachments; let i = index">
+            <span class="attachment-name">{{ attachment.name }}</span>
+            <button mat-icon-button (click)="removeAttachment(i)" class="remove-attachment-btn">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <button mat-stroked-button type="button" (click)="addAttachment()" class="add-attachment-btn">
+          <mat-icon>add</mat-icon>
+          Add Attachment
+        </button>
+      </form>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Cancel</button>
+      <button mat-raised-button color="primary" (click)="confirmResend()" 
+              [disabled]="!resendForm.valid || isResending">
+        <mat-icon>send</mat-icon>
+        {{ isResending ? 'Sending...' : 'Resend' }}
+      </button>
+    </mat-dialog-actions>
+  </div>
+</ng-template>
