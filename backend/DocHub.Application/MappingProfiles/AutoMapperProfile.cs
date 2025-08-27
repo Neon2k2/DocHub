@@ -12,7 +12,7 @@ public class AutoMapperProfile : Profile
         CreateMap<Admin, UserDto>()
             .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => GetFirstName(src.FullName)))
             .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => GetLastName(src.FullName)));
-        
+
         CreateMap<Admin, AuthResponseDto>()
             .ForMember(dest => dest.User, opt => opt.MapFrom(src => src));
 
@@ -24,8 +24,8 @@ public class AutoMapperProfile : Profile
 
         // DynamicTab mappings
         CreateMap<DynamicTab, DynamicTabDto>();
-        CreateMap<CreateDynamicTabDto, DynamicTab>();
-        CreateMap<UpdateDynamicTabDto, DynamicTab>();
+        CreateMap<CreateDynamicTabRequest, DynamicTab>();
+        CreateMap<UpdateDynamicTabRequest, DynamicTab>();
 
         // LetterTemplate mappings
         CreateMap<LetterTemplate, LetterTemplateDto>();
@@ -74,7 +74,7 @@ public class AutoMapperProfile : Profile
     {
         if (string.IsNullOrWhiteSpace(fullName))
             return string.Empty;
-        
+
         var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         return parts.Length > 0 ? parts[0] : string.Empty;
     }
@@ -83,7 +83,7 @@ public class AutoMapperProfile : Profile
     {
         if (string.IsNullOrWhiteSpace(fullName))
             return string.Empty;
-        
+
         var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         return parts.Length > 1 ? string.Join(" ", parts.Skip(1)) : string.Empty;
     }

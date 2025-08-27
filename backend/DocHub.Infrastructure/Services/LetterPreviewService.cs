@@ -616,7 +616,7 @@ public class LetterPreviewService : ILetterPreviewService
                         FieldValues = request.FieldValues
                     };
                     
-                    var preview = await GeneratePreviewAsync(previewRequest);
+                    var preview = await GeneratePreviewAsync(previewRequest.LetterTemplateId, previewRequest.EmployeeId, previewRequest.DigitalSignatureId);
                     
                     var result = new PreviewGenerationItemResult
                     {

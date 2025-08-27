@@ -17,4 +17,6 @@ public interface IEmailHistoryService
     Task<IEnumerable<EmailHistoryDto>> SearchEmailHistoryAsync(string searchTerm);
     Task<EmailHistoryDto> AddAttachmentAsync(string emailHistoryId, AddEmailAttachmentRequest request);
     Task<bool> RemoveAttachmentAsync(string emailHistoryId, string attachmentId);
+    
+    Task<IEnumerable<EmailHistoryDto>> GetEmailHistoryAsync(string? employeeId = null, string? status = null, DateTime? fromDate = null, DateTime? toDate = null, int page = 1, int pageSize = 20);
 }

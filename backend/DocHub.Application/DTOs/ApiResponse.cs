@@ -9,6 +9,7 @@ public class ApiResponse<T>
     public T? Data { get; set; }
     public List<string>? Errors { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public PaginationInfo? Pagination { get; set; }
 
     // Static factory methods for consistent responses
     public static ApiResponse<T> SuccessResult(T data, string message = "Operation completed successfully")

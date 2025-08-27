@@ -527,4 +527,70 @@ public class EmailHistoryService : IEmailHistoryService
             return false;
         }
     }
+
+    public async Task<IEnumerable<EmailHistoryDto>> GetEmailHistoryAsync(string? employeeId = null, string? status = null, DateTime? fromDate = null, DateTime? toDate = null, int page = 1, int pageSize = 20)
+    {
+        try
+        {
+            var query = _context.EmailHistories
+                .Include(eh => eh.Attachments)
+                .Include(eh => eh.Employee)
+                .Include(eh => eh.GeneratedLetter)
+                .AsQueryable();
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(employeeId))
+            {
+                query = query.Where(eh => eh.EmployeeId == employeeId);
+            }
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                query = query.Where(eh => eh.Status == status);
+            }
+
+            if (fromDate.HasValue)
+            {
+                query = query.Where(eh => eh.CreatedAt >= fromDate.Value);
+            }
+
+            if (toDate.HasValue)
+            {
+                query = query.Where(eh => eh.CreatedAt <= toDate.Value);
+            }
+
+            // Apply pagination
+            var totalCount = await query.CountAsync();
+            var emailHistories = await query
+                .OrderByDescending(eh => eh.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var dtos = new List<EmailHistoryDto>();
+            foreach (var emailHistory in emailHistories)
+            {
+                var dto = _mapper.Map<EmailHistoryDto>(emailHistory);
+                
+                if (emailHistory.Employee != null)
+                {
+                    dto.EmployeeName = $"{emailHistory.Employee.FirstName} {emailHistory.Employee.LastName}".Trim();
+                }
+                
+                if (emailHistory.GeneratedLetter != null)
+                {
+                    dto.LetterType = emailHistory.GeneratedLetter.LetterType;
+                }
+                
+                dtos.Add(dto);
+            }
+
+            return dtos;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting email history with filters");
+            throw;
+        }
+    }
 }

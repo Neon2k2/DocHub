@@ -111,4 +111,5 @@ public class GeneratePreviewRequest
     public string LetterTemplateId { get; set; } = string.Empty;
     public string EmployeeId { get; set; } = string.Empty;
     public string? DigitalSignatureId { get; set; }
+    public Dictionary<string, object>? FieldValues { get; set; }
 }

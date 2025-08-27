@@ -523,7 +523,7 @@ namespace DocHub.Infrastructure.Services.Email
                 _logger.LogInformation("Getting email analytics from {StartDate} to {EndDate}", startDate, endDate);
                 
                 // Get email history from database for the specified date range
-                var emailHistory = await _emailHistoryService.GetEmailHistoryAsync(startDate, endDate);
+                var emailHistory = await _emailHistoryService.GetEmailHistoryAsync(null, null, startDate, endDate);
                 
                 var totalEmailsSent = emailHistory.Count();
                 var totalEmailsDelivered = emailHistory.Count(e => e.Status == "Delivered");
@@ -532,14 +532,14 @@ namespace DocHub.Infrastructure.Services.Email
                 var deliveryRate = totalEmailsSent > 0 ? (double)totalEmailsDelivered / totalEmailsSent * 100 : 0;
                 
                 // Calculate average delivery time
-                var deliveredEmails = emailHistory.Where(e => e.Status == "Delivered" && e.DeliveredAt.HasValue).ToList();
+                var deliveredEmails = emailHistory.Where(e => e.Status == "Delivered" && e.DeliveredAt.HasValue && e.SentAt.HasValue).ToList();
                 var averageDeliveryTime = deliveredEmails.Any() 
-                    ? TimeSpan.FromTicks((long)deliveredEmails.Average(e => (e.DeliveredAt!.Value - e.SentAt).Ticks))
+                    ? TimeSpan.FromTicks((long)deliveredEmails.Average(e => (e.DeliveredAt!.Value - e.SentAt!.Value).Ticks))
                     : TimeSpan.Zero;
                 
                 // Get top recipients
                 var topRecipients = emailHistory
-                    .GroupBy(e => e.RecipientEmail)
+                    .GroupBy(e => e.ToEmail)
                     .OrderByDescending(g => g.Count())
                     .Take(10)
                     .Select(g => g.Key)

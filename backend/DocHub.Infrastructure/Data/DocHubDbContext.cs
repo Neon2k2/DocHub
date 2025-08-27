@@ -9,22 +9,27 @@ public class DocHubDbContext : DbContext
     {
     }
 
+    // Core entities
     public DbSet<Admin> Admins { get; set; }
     public DbSet<Employee> Employees { get; set; }
-    public DbSet<DigitalSignature> DigitalSignatures { get; set; }
     public DbSet<LetterTemplate> LetterTemplates { get; set; }
     public DbSet<LetterTemplateField> LetterTemplateFields { get; set; }
     public DbSet<GeneratedLetter> GeneratedLetters { get; set; }
-    public DbSet<LetterPreview> LetterPreviews { get; set; }
-    public DbSet<LetterAttachment> LetterAttachments { get; set; }
+    public DbSet<DigitalSignature> DigitalSignatures { get; set; }
+    public DbSet<EmailTemplate> EmailTemplates { get; set; }
     public DbSet<EmailHistory> EmailHistories { get; set; }
     public DbSet<EmailAttachment> EmailAttachments { get; set; }
-    public DbSet<FileUpload> FileUploads { get; set; }
-    public DbSet<DynamicTab> DynamicTabs { get; set; }
+    public DbSet<DocumentInfo> Files { get; set; }
     public DbSet<Notification> Notifications { get; set; }
-    public DbSet<EmailTemplate> EmailTemplates { get; set; }
     public DbSet<NotificationPreferences> NotificationPreferences { get; set; }
+    public DbSet<PasswordReset> PasswordResets { get; set; }
     public DbSet<LetterStatusHistory> LetterStatusHistories { get; set; }
+
+    // Dynamic tab entities
+    public DbSet<DynamicTab> DynamicTabs { get; set; }
+    public DbSet<DynamicTabField> DynamicTabFields { get; set; }
+    public DbSet<DynamicTabData> DynamicTabData { get; set; }
+    public DbSet<LetterPreview> LetterPreviews { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,13 +39,12 @@ public class DocHubDbContext : DbContext
         modelBuilder.Entity<Admin>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Username).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.Email).HasMaxLength(200).IsRequired();
-            entity.Property(e => e.FullName).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.PasswordHash).HasMaxLength(255).IsRequired();
-            entity.Property(e => e.Role).HasMaxLength(100);
-            entity.Property(e => e.Permissions).HasMaxLength(1000);
-            entity.Property(e => e.LastLoginIp).HasMaxLength(45);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Username).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.FullName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.PasswordHash).IsRequired();
+            entity.Property(e => e.Role).HasMaxLength(50);
             entity.HasIndex(e => e.Username).IsUnique();
             entity.HasIndex(e => e.Email).IsUnique();
         });
@@ -49,279 +53,212 @@ public class DocHubDbContext : DbContext
         modelBuilder.Entity<Employee>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.EmployeeId).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.FirstName).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.MiddleName).HasMaxLength(100);
-            entity.Property(e => e.LastName).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.Email).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.EmployeeId).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
             entity.Property(e => e.PhoneNumber).HasMaxLength(20);
-            entity.Property(e => e.Department).HasMaxLength(100);
-            entity.Property(e => e.Designation).HasMaxLength(100);
             entity.HasIndex(e => e.EmployeeId).IsUnique();
             entity.HasIndex(e => e.Email).IsUnique();
         });
 
-        // Configure DigitalSignature entity
-        modelBuilder.Entity<DigitalSignature>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.SignatureName).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.AuthorityName).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.AuthorityDesignation).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.SignatureImagePath).HasMaxLength(500);
-            entity.Property(e => e.SignatureData).HasMaxLength(4000);
-            entity.Property(e => e.Notes).HasMaxLength(1000);
-        });
+
 
         // Configure LetterTemplate entity
         modelBuilder.Entity<LetterTemplate>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.LetterType).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.LetterType).IsRequired().HasMaxLength(50);
             entity.Property(e => e.TemplateContent).IsRequired();
-            entity.Property(e => e.TemplateFilePath).HasMaxLength(500);
+            entity.Property(e => e.TemplateFilePath);
             entity.Property(e => e.Category).HasMaxLength(100);
-            entity.Property(e => e.DataSource).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.DatabaseQuery).HasMaxLength(4000);
-        });
-
-        // Configure LetterTemplateField entity
-        modelBuilder.Entity<LetterTemplateField>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.FieldName).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.DataType).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.DisplayName).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.DefaultValue).HasMaxLength(500);
-            entity.Property(e => e.ValidationRules).HasMaxLength(1000);
+            entity.Property(e => e.DataSource).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.DatabaseQuery);
+            entity.HasIndex(e => e.LetterType);
         });
 
         // Configure GeneratedLetter entity
         modelBuilder.Entity<GeneratedLetter>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.LetterNumber).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.LetterType).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.LetterFilePath).HasMaxLength(500);
-            entity.Property(e => e.Status).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.EmailId).HasMaxLength(200);
-            entity.Property(e => e.ErrorMessage).HasMaxLength(1000);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.LetterNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.LetterType).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.LetterTemplateId).IsRequired();
+            entity.Property(e => e.EmployeeId).IsRequired();
+            entity.Property(e => e.DigitalSignatureId);
+            entity.Property(e => e.LetterFilePath);
+            entity.Property(e => e.Status).IsRequired();
+            entity.HasOne<LetterTemplate>().WithMany().HasForeignKey(e => e.LetterTemplateId);
+            entity.HasOne<Employee>().WithMany().HasForeignKey(e => e.EmployeeId);
+            entity.HasOne<DigitalSignature>().WithMany(d => d.GeneratedLetters).HasForeignKey(e => e.DigitalSignatureId);
         });
 
-        // Configure LetterPreview entity
-        modelBuilder.Entity<LetterPreview>(entity =>
+        // Configure DigitalSignature entity
+        modelBuilder.Entity<DigitalSignature>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.LetterType).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.PreviewContent).IsRequired();
-            entity.Property(e => e.PreviewFilePath).HasMaxLength(500);
-            entity.Property(e => e.PreviewImagePath).HasMaxLength(500);
-        });
-
-        // Configure LetterStatusHistory entity
-        modelBuilder.Entity<LetterStatusHistory>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.LetterId).HasMaxLength(450).IsRequired();
-            entity.Property(e => e.OldStatus).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.NewStatus).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.ChangedBy).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.Notes).HasMaxLength(500);
-            
-            entity.HasOne(e => e.Letter)
-                .WithMany()
-                .HasForeignKey(e => e.LetterId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-        // Configure LetterAttachment entity
-        modelBuilder.Entity<LetterAttachment>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.FileName).HasMaxLength(255).IsRequired();
-            entity.Property(e => e.FileType).HasMaxLength(100);
-            entity.Property(e => e.FilePath).HasMaxLength(500).IsRequired();
-        });
-
-        // Configure EmailHistory entity
-        modelBuilder.Entity<EmailHistory>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Subject).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.ToEmail).HasMaxLength(255).IsRequired();
-            entity.Property(e => e.CcEmail).HasMaxLength(255);
-            entity.Property(e => e.BccEmail).HasMaxLength(255);
-            entity.Property(e => e.Body).IsRequired();
-            entity.Property(e => e.Status).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.EmailProvider).HasMaxLength(100);
-            entity.Property(e => e.EmailId).HasMaxLength(100);
-        });
-
-        // Configure EmailAttachment entity
-        modelBuilder.Entity<EmailAttachment>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.FileName).HasMaxLength(255).IsRequired();
-            entity.Property(e => e.FileType).HasMaxLength(100);
-            entity.Property(e => e.FilePath).HasMaxLength(500).IsRequired();
-            entity.Property(e => e.FileSize).IsRequired();
-        });
-
-        // Configure FileUpload entity
-        modelBuilder.Entity<FileUpload>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.FileName).HasMaxLength(255).IsRequired();
-            entity.Property(e => e.FileType).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.FilePath).HasMaxLength(500).IsRequired();
-            entity.Property(e => e.FileSize).IsRequired();
-            entity.Property(e => e.Category).HasMaxLength(100);
-            entity.Property(e => e.Description).HasMaxLength(500);
-            entity.Property(e => e.DocumentType).HasMaxLength(100);
-            entity.Property(e => e.AuthorityName).HasMaxLength(100);
-            entity.Property(e => e.AuthorityDesignation).HasMaxLength(100);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.SignatureName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.AuthorityName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.AuthorityDesignation).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.UserId).IsRequired();
+            entity.Property(e => e.SignatureType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.SignatureHash).IsRequired();
+            entity.Property(e => e.SignaturePurpose).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.SignatureImagePath);
+            entity.Property(e => e.SignatureData);
+            entity.Property(e => e.ExpiresAt);
+            entity.Property(e => e.IsActive);
+            entity.Property(e => e.SortOrder);
             entity.Property(e => e.Notes).HasMaxLength(1000);
-            entity.Property(e => e.Location).HasMaxLength(100);
-            entity.Property(e => e.Department).HasMaxLength(100);
-            entity.Property(e => e.LetterType).HasMaxLength(100);
-            entity.Property(e => e.Version).HasMaxLength(100);
-            entity.Property(e => e.ProcessedBy).HasMaxLength(450);
-            entity.Property(e => e.ErrorMessage).HasMaxLength(1000);
-            entity.Property(e => e.Status).HasMaxLength(50);
-        });
-
-        // Configure PasswordReset entity
-        modelBuilder.Entity<PasswordReset>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Email).HasMaxLength(200).IsRequired();
-            entity.Property(e => e.Token).HasMaxLength(255).IsRequired();
-            entity.Property(e => e.ExpiresAt).IsRequired();
-            entity.Property(e => e.IsUsed).IsRequired();
-            entity.Property(e => e.UsedByIp).HasMaxLength(45);
-            entity.HasIndex(e => e.Email);
-            entity.HasIndex(e => e.Token).IsUnique();
-        });
-
-        // Configure DynamicTab entity
-        modelBuilder.Entity<DynamicTab>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.DisplayName).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.Description).HasMaxLength(500);
-            entity.Property(e => e.DataSource).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.DatabaseQuery).HasMaxLength(4000);
-            entity.Property(e => e.Icon).HasMaxLength(100);
-            entity.Property(e => e.Color).HasMaxLength(50);
-            entity.Property(e => e.RequiredPermission).HasMaxLength(100);
-            entity.HasIndex(e => e.Name).IsUnique();
-        });
-
-        // Configure relationships
-        modelBuilder.Entity<LetterTemplate>()
-            .HasMany(lt => lt.Fields)
-            .WithOne(f => f.LetterTemplate)
-            .HasForeignKey(f => f.LetterTemplateId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<LetterTemplate>()
-            .HasMany(lt => lt.GeneratedLetters)
-            .WithOne(gl => gl.LetterTemplate)
-            .HasForeignKey(gl => gl.LetterTemplateId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<Employee>()
-            .HasMany(e => e.GeneratedLetters)
-            .WithOne(gl => gl.Employee)
-            .HasForeignKey(gl => gl.EmployeeId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<GeneratedLetter>()
-            .HasOne(gl => gl.DigitalSignature)
-            .WithMany(ds => ds.GeneratedLetters)
-            .HasForeignKey(gl => gl.DigitalSignatureId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<GeneratedLetter>()
-            .HasMany(gl => gl.Attachments)
-            .WithOne(la => la.GeneratedLetter)
-            .HasForeignKey(la => la.GeneratedLetterId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<EmailHistory>()
-            .HasMany(eh => eh.Attachments)
-            .WithOne(ea => ea.EmailHistory)
-            .HasForeignKey(ea => ea.EmailHistoryId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<DynamicTab>()
-            .HasMany(dt => dt.LetterTemplates)
-            .WithOne(lt => lt.DynamicTab)
-            .HasForeignKey(lt => lt.DynamicTabId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        // Configure LetterTemplate relationship with DynamicTab
-        modelBuilder.Entity<LetterTemplate>()
-            .HasOne(lt => lt.DynamicTab)
-            .WithMany(dt => dt.LetterTemplates)
-            .HasForeignKey(lt => lt.DynamicTabId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        // Configure indexes for better performance
-        modelBuilder.Entity<EmailHistory>()
-            .HasIndex(e => e.SentAt);
-
-        modelBuilder.Entity<GeneratedLetter>()
-            .HasIndex(e => e.GeneratedAt);
-
-        modelBuilder.Entity<FileUpload>()
-            .HasIndex(e => e.CreatedAt);
-
-        modelBuilder.Entity<DigitalSignature>()
-            .HasIndex(e => e.CreatedAt);
-
-        // Configure Notification entity
-        modelBuilder.Entity<Notification>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.UserId).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.Type).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
-            entity.Property(e => e.Message).IsRequired();
-            entity.Property(e => e.Data).HasMaxLength(4000);
-            entity.Property(e => e.Priority).HasMaxLength(50);
-            entity.Property(e => e.SenderId).HasMaxLength(100);
-            entity.Property(e => e.GroupName).HasMaxLength(100);
-            entity.HasIndex(e => e.UserId);
-            entity.HasIndex(e => e.CreatedAt);
-            entity.HasIndex(e => e.IsDelivered);
+            entity.Property(e => e.Metadata);
         });
 
         // Configure EmailTemplate entity
         modelBuilder.Entity<EmailTemplate>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.TemplateName).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.TemplateType).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.TemplateName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.TemplateType).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.Content).IsRequired();
+            entity.Property(e => e.Subject).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Body).IsRequired();
             entity.Property(e => e.Category).HasMaxLength(100);
-            entity.Property(e => e.Tags).HasMaxLength(500);
-            entity.HasIndex(e => e.TemplateName).IsUnique();
-            entity.HasIndex(e => e.TemplateType);
-            entity.HasIndex(e => e.IsActive);
+        });
+
+        // Configure EmailHistory entity
+        modelBuilder.Entity<EmailHistory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Subject).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ToEmail).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.CcEmail).HasMaxLength(255);
+            entity.Property(e => e.BccEmail).HasMaxLength(255);
+            entity.Property(e => e.Body).IsRequired();
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ErrorMessage).HasMaxLength(1000);
+            entity.HasOne(e => e.Employee).WithMany().HasForeignKey(e => e.EmployeeId);
+            entity.HasOne(e => e.GeneratedLetter).WithMany().HasForeignKey(e => e.GeneratedLetterId);
+        });
+
+        // Configure EmailAttachment entity
+        modelBuilder.Entity<EmailAttachment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.FileName).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.FileType).HasMaxLength(100);
+            entity.Property(e => e.FilePath).IsRequired().HasMaxLength(500);
+            entity.HasOne(e => e.EmailHistory).WithMany(e => e.Attachments).HasForeignKey(e => e.EmailHistoryId);
+        });
+
+        // Configure DocumentInfo entity
+        modelBuilder.Entity<DocumentInfo>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.FileName).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.FilePath).IsRequired();
+            entity.Property(e => e.ContentType).HasMaxLength(100);
+            entity.Property(e => e.UploadedBy).IsRequired().HasMaxLength(100);
+        });
+
+        // Configure Notification entity
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Type).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Message).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.Data).HasMaxLength(4000);
+            entity.Property(e => e.GroupName).HasMaxLength(100);
+            entity.Property(e => e.RecipientId).HasMaxLength(100);
         });
 
         // Configure NotificationPreferences entity
         modelBuilder.Entity<NotificationPreferences>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.UserId).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.EnabledTypes).HasMaxLength(1000);
-            entity.Property(e => e.DisabledTypes).HasMaxLength(1000);
-            entity.HasIndex(e => e.UserId).IsUnique();
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.UserId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.EnabledTypes).HasMaxLength(500);
+            entity.Property(e => e.DisabledTypes).HasMaxLength(500);
+        });
+
+        // Configure PasswordReset entity
+        modelBuilder.Entity<PasswordReset>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.Token).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.UsedByIp).HasMaxLength(45);
+        });
+
+
+
+        // Configure DynamicTab entity
+        modelBuilder.Entity<DynamicTab>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.DisplayName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.TabType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.DataSource).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.DatabaseQuery).HasMaxLength(4000);
+            entity.Property(e => e.ExcelMapping).HasMaxLength(4000);
+            entity.Property(e => e.TemplateId).HasMaxLength(100);
+            entity.Property(e => e.FieldMappings).HasMaxLength(4000);
+            entity.Property(e => e.Icon).HasMaxLength(50);
+            entity.Property(e => e.Color).HasMaxLength(20);
+            entity.Property(e => e.Permissions).HasMaxLength(500);
+            entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+            entity.HasOne(e => e.Template).WithMany().HasForeignKey(e => e.TemplateId);
+        });
+
+        // Configure DynamicTabField entity
+        modelBuilder.Entity<DynamicTabField>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.DynamicTabId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.FieldName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.DisplayName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.DataType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ValidationRules).HasMaxLength(1000);
+            entity.Property(e => e.DefaultValue).HasMaxLength(500);
+            entity.Property(e => e.ExcelColumnName).HasMaxLength(100);
+            entity.Property(e => e.DatabaseColumnName).HasMaxLength(100);
+            entity.HasOne(e => e.DynamicTab).WithMany(e => e.Fields).HasForeignKey(e => e.DynamicTabId);
+        });
+
+        // Configure DynamicTabData entity
+        modelBuilder.Entity<DynamicTabData>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.DynamicTabId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.DataSource).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.ExternalId).HasMaxLength(100);
+            entity.Property(e => e.DataContent).HasMaxLength(4000);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ProcessedBy).HasMaxLength(100);
+            entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+            entity.HasOne(e => e.DynamicTab).WithMany(e => e.DataRecords).HasForeignKey(e => e.DynamicTabId);
         });
     }
 }

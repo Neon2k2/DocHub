@@ -18,4 +18,5 @@ public interface IDigitalSignatureService
     Task<string> GetLatestSignaturePathAsync();
     Task<int> GetTotalCountAsync();
     Task<IEnumerable<DigitalSignature>> GetPagedAsync(int page, int pageSize);
+    Task<IEnumerable<DigitalSignature>> GetByUserIdAsync(string userId);
 }

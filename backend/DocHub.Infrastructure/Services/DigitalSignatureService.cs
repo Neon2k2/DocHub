@@ -155,7 +155,7 @@ public class DigitalSignatureService : IDigitalSignatureService
                 AuthorityDesignation = authorityDesignation
             };
             var signatureData = await _proxKeyService.GenerateSignatureAsync(request);
-            
+
             if (signatureData == null || string.IsNullOrEmpty(signatureData.SignatureData))
             {
                 throw new InvalidOperationException("Failed to generate signature from PROXKey.");
@@ -164,7 +164,7 @@ public class DigitalSignatureService : IDigitalSignatureService
             // Save signature image to file system
             var fileName = $"signature_{authorityName.Replace(" ", "_")}_{DateTime.UtcNow:yyyyMMddHHmmss}.png";
             var filePath = Path.Combine("wwwroot", "signatures", fileName);
-            
+
             // Ensure directory exists
             var directory = Path.GetDirectoryName(filePath);
             if (!Directory.Exists(directory))
@@ -199,7 +199,7 @@ public class DigitalSignatureService : IDigitalSignatureService
             };
 
             var createdSignature = await CreateAsync(signature);
-            
+
             _logger.LogInformation("Signature generated successfully for authority: {AuthorityName}", authorityName);
             return createdSignature;
         }
@@ -262,5 +262,13 @@ public class DigitalSignatureService : IDigitalSignatureService
         var maxSortOrder = await _context.DigitalSignatures
             .MaxAsync(s => (int?)s.SortOrder) ?? 0;
         return maxSortOrder + 1;
+    }
+
+    public async Task<IEnumerable<DigitalSignature>> GetByUserIdAsync(string userId)
+    {
+        return await _context.DigitalSignatures
+            .Where(s => s.UserId == userId)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
     }
 }

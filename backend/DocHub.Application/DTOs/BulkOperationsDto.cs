@@ -19,6 +19,12 @@ public class BulkLetterGenerationRequestDto
     public bool GeneratePreviews { get; set; } = true;
     
     public bool SendEmails { get; set; } = false;
+    
+    public Dictionary<string, object>? CustomFields { get; set; }
+    
+    public bool GeneratePreview { get; set; } = true;
+    
+    public bool SendEmail { get; set; } = false;
 }
 
 public class BulkPreviewGenerationRequest
@@ -34,6 +40,8 @@ public class BulkPreviewGenerationRequest
     public bool UseLatestSignature { get; set; } = true;
     
     public bool OverwriteExisting { get; set; } = false;
+    
+    public Dictionary<string, object>? FieldValues { get; set; }
 }
 
 public class BulkEmailSendingRequest

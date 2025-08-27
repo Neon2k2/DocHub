@@ -26,7 +26,7 @@ public class EmailStatusHub : Hub
         var userId = Context.User?.FindFirst("sub")?.Value ?? Context.ConnectionId;
         
         // Add user connection to notification service
-        await _notificationService.AddUserConnectionAsync(userId, Context.ConnectionId);
+        await _notificationService.RegisterUserConnectionAsync(userId, Context.ConnectionId);
         
         await base.OnConnectedAsync();
     }

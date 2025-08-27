@@ -386,7 +386,7 @@ public class DigitalSignatureController : ControllerBase
                         signature.UpdatedAt = DateTime.UtcNow;
                         signature.UpdatedBy = "System"; // TODO: Get from current user context
 
-                        await _digitalSignatureService.UpdateAsync(signature);
+                        await _digitalSignatureService.UpdateAsync(signatureId, signature);
                         successCount++;
 
                         results.Add(new SignatureUpdateResult

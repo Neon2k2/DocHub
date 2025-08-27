@@ -34,4 +34,6 @@ public class Notification : BaseEntity
     public string? SenderId { get; set; }
     
     public string? GroupName { get; set; }
+    
+    public string? RecipientId { get; set; }
 }

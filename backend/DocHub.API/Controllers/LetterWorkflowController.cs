@@ -1,5 +1,6 @@
 using DocHub.Application.DTOs;
 using DocHub.Application.Interfaces;
+using DocHub.Core.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 

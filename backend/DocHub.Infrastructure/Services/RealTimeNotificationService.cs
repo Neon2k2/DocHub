@@ -319,7 +319,7 @@ public class RealTimeNotificationService : IRealTimeNotificationService
         }
     }
 
-    public async Task<NotificationPreferencesDto> GetUserNotificationPreferencesAsync(string userId)
+    public async Task<NotificationPreferences> GetUserNotificationPreferencesAsync(string userId)
     {
         try
         {
@@ -328,38 +328,30 @@ public class RealTimeNotificationService : IRealTimeNotificationService
 
             if (prefs != null)
             {
-                return new NotificationPreferencesDto
-                {
-                    UserId = prefs.UserId,
-                    EmailNotifications = prefs.EmailNotifications,
-                    PushNotifications = prefs.PushNotifications,
-                    InAppNotifications = prefs.InAppNotifications,
-                    EnabledTypes = prefs.EnabledTypes?.Split(',').ToList() ?? new List<string>(),
-                    DisabledTypes = prefs.DisabledTypes?.Split(',').ToList() ?? new List<string>(),
-                    QuietHoursStart = prefs.QuietHoursStart,
-                    QuietHoursEnd = prefs.QuietHoursEnd,
-                    QuietHoursEnabled = prefs.QuietHoursEnabled
-                };
+                return prefs;
             }
 
             // Return default preferences
-            return new NotificationPreferencesDto
+            return new NotificationPreferences
             {
+                Id = Guid.NewGuid().ToString(),
                 UserId = userId,
                 EmailNotifications = true,
                 PushNotifications = true,
                 InAppNotifications = true,
-                EnabledTypes = new List<string> { "general", "letter", "email", "system" },
-                DisabledTypes = new List<string>(),
+                EnabledTypes = "general,letter,email,system",
+                DisabledTypes = "",
                 QuietHoursStart = TimeSpan.FromHours(22),
                 QuietHoursEnd = TimeSpan.FromHours(8),
-                QuietHoursEnabled = false
+                QuietHoursEnabled = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting notification preferences for user {UserId}", userId);
-            return new NotificationPreferencesDto { UserId = userId };
+            return new NotificationPreferences { UserId = userId };
         }
     }
 
@@ -405,7 +397,7 @@ public class RealTimeNotificationService : IRealTimeNotificationService
                 Type = message.Type,
                 Title = message.Title,
                 Message = message.Message,
-                Data = message.Data,
+                Data = message.Data?.ToString(),
                 IsDelivered = false,
                 CreatedAt = DateTime.UtcNow
             };

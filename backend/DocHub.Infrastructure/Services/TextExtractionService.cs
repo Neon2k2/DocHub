@@ -3,7 +3,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.RegularExpressions;
-using iTextSharp.text.pdf.parser;
+using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas.Parser;
+using iText.Kernel.Pdf.Canvas.Parser.Listener;
 using DocumentFormat.OpenXml.Packaging;
 using System.IO;
 using System.Collections.Generic;
@@ -81,8 +83,8 @@ public class TextExtractionService : ITextExtractionService
                 result.WordCount = CountWords(result.ExtractedText);
                 result.CharacterCount = result.ExtractedText?.Length ?? 0;
                 result.LineCount = CountLines(result.ExtractedText);
-                
-                _logger.LogInformation("Text extracted successfully from {FilePath} in {Duration}", 
+
+                _logger.LogInformation("Text extracted successfully from {FilePath} in {Duration}",
                     filePath, result.ProcessingDuration);
             }
         }
@@ -138,7 +140,7 @@ public class TextExtractionService : ITextExtractionService
         {
             var encoding = options?.Encoding ?? Encoding.UTF8;
             var text = await File.ReadAllTextAsync(filePath, encoding);
-            
+
             return new TextExtractionResult
             {
                 FilePath = filePath,
@@ -165,17 +167,19 @@ public class TextExtractionService : ITextExtractionService
     {
         try
         {
-            // Use iTextSharp for PDF text extraction
-            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-            using var pdfReader = new iTextSharp.text.pdf.PdfReader(stream);
-            
+            // Use iText7 for PDF text extraction
+            using var pdfReader = new PdfReader(filePath);
+            using var pdfDoc = new PdfDocument(pdfReader);
+
             var text = new StringBuilder();
-            for (int i = 1; i <= pdfReader.NumberOfPages; i++)
+            var listener = new LocationTextExtractionStrategy();
+
+            for (int i = 1; i <= pdfDoc.GetNumberOfPages(); i++)
             {
-                var pageText = iTextSharp.text.pdf.parser.PdfTextExtractor.GetTextFromPage(pdfReader, i);
+                var pageText = PdfTextExtractor.GetTextFromPage(pdfDoc.GetPage(i), listener);
                 text.AppendLine(pageText);
             }
-            
+
             return new TextExtractionResult
             {
                 FilePath = filePath,
@@ -207,14 +211,14 @@ public class TextExtractionService : ITextExtractionService
             // Use DocumentFormat.OpenXml for Word document text extraction
             using var document = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(filePath, false);
             var body = document.MainDocumentPart?.Document.Body;
-            
+
             if (body == null)
             {
                 throw new InvalidOperationException("Document body is null");
             }
-            
+
             var text = body.InnerText;
-            
+
             return new TextExtractionResult
             {
                 FilePath = filePath,
@@ -245,11 +249,11 @@ public class TextExtractionService : ITextExtractionService
             // Use EPPlus for Excel text extraction
             using var package = new OfficeOpenXml.ExcelPackage(new System.IO.FileInfo(filePath));
             var text = new StringBuilder();
-            
+
             foreach (var worksheet in package.Workbook.Worksheets)
             {
                 text.AppendLine($"Worksheet: {worksheet.Name}");
-                
+
                 var dimension = worksheet.Dimension;
                 if (dimension != null)
                 {
@@ -272,7 +276,7 @@ public class TextExtractionService : ITextExtractionService
                 }
                 text.AppendLine();
             }
-            
+
             return new TextExtractionResult
             {
                 FilePath = filePath,
@@ -302,7 +306,7 @@ public class TextExtractionService : ITextExtractionService
         {
             var rtfContent = await File.ReadAllTextAsync(filePath);
             var plainText = ConvertRtfToPlainText(rtfContent);
-            
+
             return new TextExtractionResult
             {
                 FilePath = filePath,
@@ -331,7 +335,7 @@ public class TextExtractionService : ITextExtractionService
         {
             var htmlContent = await File.ReadAllTextAsync(filePath);
             var plainText = ConvertHtmlToPlainText(htmlContent);
-            
+
             return new TextExtractionResult
             {
                 FilePath = filePath,
@@ -360,7 +364,7 @@ public class TextExtractionService : ITextExtractionService
         {
             var xmlContent = await File.ReadAllTextAsync(filePath);
             var plainText = ConvertXmlToPlainText(xmlContent);
-            
+
             return new TextExtractionResult
             {
                 FilePath = filePath,
@@ -389,7 +393,7 @@ public class TextExtractionService : ITextExtractionService
         {
             var jsonContent = await File.ReadAllTextAsync(filePath);
             var plainText = ConvertJsonToPlainText(jsonContent);
-            
+
             return new TextExtractionResult
             {
                 FilePath = filePath,
@@ -423,11 +427,11 @@ public class TextExtractionService : ITextExtractionService
             plainText = Regex.Replace(plainText, @"\\'[0-9a-f]{2}", "");
             plainText = Regex.Replace(plainText, @"\\\*\\", "");
             plainText = Regex.Replace(plainText, @"\\\s", " ");
-            
+
             // Clean up extra whitespace
             plainText = Regex.Replace(plainText, @"\s+", " ");
             plainText = plainText.Trim();
-            
+
             return plainText;
         }
         catch
@@ -448,11 +452,11 @@ public class TextExtractionService : ITextExtractionService
             plainText = Regex.Replace(plainText, @"&gt;", ">");
             plainText = Regex.Replace(plainText, @"&quot;", "\"");
             plainText = Regex.Replace(plainText, @"&#39;", "'");
-            
+
             // Clean up extra whitespace
             plainText = Regex.Replace(plainText, @"\s+", " ");
             plainText = plainText.Trim();
-            
+
             return plainText;
         }
         catch
@@ -473,11 +477,11 @@ public class TextExtractionService : ITextExtractionService
             plainText = Regex.Replace(plainText, @"&gt;", ">");
             plainText = Regex.Replace(plainText, @"&quot;", "\"");
             plainText = Regex.Replace(plainText, @"&#39;", "'");
-            
+
             // Clean up extra whitespace
             plainText = Regex.Replace(plainText, @"\s+", " ");
             plainText = plainText.Trim();
-            
+
             return plainText;
         }
         catch
@@ -492,18 +496,18 @@ public class TextExtractionService : ITextExtractionService
         {
             // Basic JSON to plain text conversion
             var plainText = jsonContent;
-            
+
             // Remove quotes around property names and values
             plainText = Regex.Replace(plainText, @"""([^""]+)""\s*:", "$1: ");
             plainText = Regex.Replace(plainText, @":\s*""([^""]+)""", ": $1");
-            
+
             // Remove brackets and braces
             plainText = Regex.Replace(plainText, @"[\[\]{}]", "");
-            
+
             // Clean up extra whitespace
             plainText = Regex.Replace(plainText, @"\s+", " ");
             plainText = plainText.Trim();
-            
+
             return plainText;
         }
         catch
@@ -516,7 +520,7 @@ public class TextExtractionService : ITextExtractionService
     {
         if (string.IsNullOrWhiteSpace(text))
             return 0;
-        
+
         return text.Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Length;
     }
 
@@ -524,7 +528,7 @@ public class TextExtractionService : ITextExtractionService
     {
         if (string.IsNullOrWhiteSpace(text))
             return 0;
-        
+
         return text.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Length;
     }
 }

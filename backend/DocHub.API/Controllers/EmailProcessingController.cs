@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using DocHub.Application.Interfaces;
 using DocHub.Application.DTOs;
+using DocHub.Core.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 
@@ -224,7 +225,7 @@ public class EmailProcessingController : ControllerBase
         try
         {
             var templates = await _emailTemplateService.GetAvailableTemplatesAsync();
-            return Ok(ApiResponse<IEnumerable<EmailTemplate>>.SuccessResult(templates, "Email templates retrieved successfully"));
+            return Ok(ApiResponse<IEnumerable<EmailTemplateInfo>>.SuccessResult(templates, "Email templates retrieved successfully"));
         }
         catch (Exception ex)
         {
@@ -241,10 +242,10 @@ public class EmailProcessingController : ControllerBase
             var template = await _emailTemplateService.GetTemplateAsync(templateName);
             if (template != null)
             {
-                return Ok(ApiResponse<EmailTemplate>.SuccessResult(template, "Email template retrieved successfully"));
+                return Ok(ApiResponse<EmailTemplateInfo>.SuccessResult(template, "Email template retrieved successfully"));
             }
 
-            return NotFound(ApiResponse<EmailTemplate>.NotFoundResult("Template not found"));
+            return NotFound(ApiResponse<EmailTemplateInfo>.NotFoundResult("Template not found"));
         }
         catch (Exception ex)
         {
@@ -283,12 +284,12 @@ public class EmailProcessingController : ControllerBase
         try
         {
             var preview = await _emailTemplateService.PreviewTemplateAsync(templateName, placeholders);
-            return Ok(ApiResponse<EmailPreview>.SuccessResult(preview, "Email template preview generated successfully"));
+            return Ok(ApiResponse<string>.SuccessResult(preview, "Email template preview generated successfully"));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error previewing email template");
-            return StatusCode(500, ApiResponse<EmailPreview>.ErrorResult("Internal server error"));
+            return StatusCode(500, ApiResponse<string>.ErrorResult("Internal server error"));
         }
     }
 

@@ -78,10 +78,12 @@ public class AuthController : ControllerBase
                     Id = admin.Id.ToString(),
                     Username = admin.Username,
                     Email = admin.Email,
-                    FullName = admin.FullName,
+                    FirstName = admin.FullName.Split(' ').FirstOrDefault() ?? "",
+                    LastName = admin.FullName.Split(' ').Skip(1).FirstOrDefault() ?? "",
                     Role = admin.Role,
-                    IsSuperAdmin = admin.IsSuperAdmin,
-                    Permissions = admin.Permissions
+                    IsActive = admin.IsActive,
+                    CreatedAt = admin.CreatedAt,
+                    LastLoginAt = admin.LastLoginAt
                 }
             });
         }
@@ -101,7 +103,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var principal = GetPrincipalFromExpiredToken(request.Token);
+            var principal = GetPrincipalFromExpiredToken(request.RefreshToken);
             if (principal == null)
             {
                 return BadRequest(new AuthResponseDto
@@ -391,10 +393,12 @@ public class AuthController : ControllerBase
                 Id = admin.Id.ToString(),
                 Username = admin.Username,
                 Email = admin.Email,
-                FullName = admin.FullName,
+                FirstName = admin.FullName.Split(' ').FirstOrDefault() ?? "",
+                LastName = admin.FullName.Split(' ').Skip(1).FirstOrDefault() ?? "",
                 Role = admin.Role,
-                IsSuperAdmin = admin.IsSuperAdmin,
-                Permissions = admin.Permissions
+                IsActive = admin.IsActive,
+                CreatedAt = admin.CreatedAt,
+                LastLoginAt = admin.LastLoginAt
             };
 
             return Ok(new ApiResponse<UserDto>

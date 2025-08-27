@@ -7,4 +7,10 @@ public class GenerateLetterRequest
     public string? DigitalSignatureId { get; set; }
     public Dictionary<string, string> FieldValues { get; set; } = new();
     public List<string> AttachmentPaths { get; set; } = new();
+    
+    public Dictionary<string, object>? CustomFields { get; set; }
+    
+    public bool GeneratePreview { get; set; } = true;
+    
+    public bool SendEmail { get; set; } = false;
 }

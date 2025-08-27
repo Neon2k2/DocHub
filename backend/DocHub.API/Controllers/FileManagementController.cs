@@ -169,7 +169,7 @@ public class FileManagementController : ControllerBase
     /// Get file information
     /// </summary>
     [HttpGet("info/{fileId}")]
-    public async Task<ActionResult<ApiResponse<FileInfo>>> GetFileInfo(string fileId)
+    public async Task<ActionResult<ApiResponse<DocHub.Application.Interfaces.FileInfo>>> GetFileInfo(string fileId)
     {
         try
         {
@@ -177,16 +177,16 @@ public class FileManagementController : ControllerBase
 
             if (fileInfo == null)
             {
-                return NotFound(ApiResponse<FileInfo>.ErrorResult("File not found", new List<string> { "File ID not found" }));
+                return NotFound(ApiResponse<DocHub.Application.Interfaces.FileInfo>.ErrorResult("File not found", new List<string> { "File ID not found" }));
             }
 
             _logger.LogInformation("File info retrieved: {FileId}", fileId);
-            return Ok(ApiResponse<FileInfo>.SuccessResult(fileInfo, "File information retrieved successfully"));
+            return Ok(ApiResponse<DocHub.Application.Interfaces.FileInfo>.SuccessResult(fileInfo, "File information retrieved successfully"));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting file info for {FileId}", fileId);
-            return StatusCode(500, ApiResponse<FileInfo>.ErrorResult("Error getting file info", new List<string> { ex.Message }));
+            return StatusCode(500, ApiResponse<DocHub.Application.Interfaces.FileInfo>.ErrorResult("Error getting file info", new List<string> { ex.Message }));
         }
     }
 

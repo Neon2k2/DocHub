@@ -4,7 +4,7 @@ using DocHub.Infrastructure.Data;
 using DocHub.Application.Interfaces;
 using DocHub.Infrastructure.Services;
 using DocHub.Infrastructure.Repositories;
-using DocHub.Core.Interfaces;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -13,6 +13,10 @@ using DocHub.API.Hubs;
 using DocHub.Infrastructure.Services.Document;
 using DocHub.Infrastructure.Services.PROXKey;
 using DocHub.Infrastructure.Services.Signature;
+using DocHub.Application.MappingProfiles;
+using FluentValidation.AspNetCore;
+using DocHub.Application.Validation;
+using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,7 +26,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "DocHub API", Version = "1.0.0" });
-    
+
     // Add JWT authentication to Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -32,7 +36,7 @@ builder.Services.AddSwaggerGen(c =>
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
-    
+
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -84,10 +88,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Add DbContext with SQLite
 builder.Services.AddDbContext<DocHubDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
         ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
     options.UseSqlite(connectionString, b => b.MigrationsAssembly("DocHub.API"));
+    options.EnableSensitiveDataLogging();  // Enable detailed logging for development
 });
+
+// Register repositories
+builder.Services.AddScoped<IDynamicTabRepository, DynamicTabRepository>();
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+
+// Add AutoMapper
+builder.Services.AddAutoMapper(typeof(DynamicTabProfile).Assembly);
+
+// Add FluentValidation
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateDynamicTabDtoValidator>();
 
 // Register services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -103,6 +119,7 @@ builder.Services.AddScoped<ILetterPreviewService, LetterPreviewService>();
 builder.Services.AddScoped<IEmailHistoryService, EmailHistoryService>();
 builder.Services.AddScoped<IPROXKeyService, DocHub.Infrastructure.Services.PROXKey.PROXKeyService>();
 builder.Services.AddScoped<ISignatureService, DocHub.Infrastructure.Services.Signature.SignatureService>();
+builder.Services.AddScoped<IExcelDataProcessingService, DocHub.Infrastructure.Services.ExcelDataProcessing.ExcelDataProcessingService>();
 
 // Register new services for backend completion
 builder.Services.AddScoped<IFileValidationService, FileValidationService>();
@@ -113,12 +130,6 @@ builder.Services.AddScoped<IRealTimeNotificationService, RealTimeNotificationSer
 
 // Register Memory Cache for rate limiting
 builder.Services.AddMemoryCache();
-
-// Register generic repository for each entity type
-builder.Services.AddScoped(typeof(DocHub.Application.Interfaces.IGenericRepository<>), typeof(GenericRepository<>));
-
-// Add AutoMapper
-builder.Services.AddAutoMapper(typeof(Program).Assembly);
 
 // Add configuration
 builder.Services.AddSingleton<DocHub.Application.Configuration.AppConfiguration>();
@@ -137,7 +148,7 @@ if (builder.Configuration.GetValue<bool>("Database:AutoMigrate", true))
 {
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<DocHubDbContext>();
-    
+
     try
     {
         // Apply any pending migrations
@@ -146,7 +157,7 @@ if (builder.Configuration.GetValue<bool>("Database:AutoMigrate", true))
             context.Database.Migrate();
             app.Logger.LogInformation("Database migrations applied successfully");
         }
-        
+
         // Seed initial data if enabled
         if (builder.Configuration.GetValue<bool>("Database:AutoSeed", true))
         {
@@ -230,11 +241,11 @@ static async Task SeedDataAsync(DocHubDbContext context)
                 IsActive = true
             }
         };
-        
+
         context.DynamicTabs.AddRange(defaultTabs);
         await context.SaveChangesAsync();
     }
-    
+
     if (!context.Admins.Any())
     {
         var admin = new DocHub.Core.Entities.Admin
@@ -247,7 +258,7 @@ static async Task SeedDataAsync(DocHubDbContext context)
             IsSuperAdmin = true,
             IsActive = true
         };
-        
+
         context.Admins.Add(admin);
         await context.SaveChangesAsync();
     }
